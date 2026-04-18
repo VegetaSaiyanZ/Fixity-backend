@@ -78,3 +78,42 @@ export const deleteReport = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
+export const supportReport = async (req: Request, res: Response) => {
+  try {
+    const reportId = parseInt(req.params.id, 10);
+    // Assuming user_id comes from req.body for now until auth is added
+    const userId = req.body.user_id;
+
+    if (isNaN(reportId) || !userId) {
+      return res.status(400).json({ error: 'Invalid report ID or missing user_id' });
+    }
+
+    const support = await ReportService.supportReport(reportId, userId);
+    res.status(201).json(support);
+  } catch (error: any) {
+    console.error(`Error supporting report ${req.params.id}:`, error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export const unsupportReport = async (req: Request, res: Response) => {
+  try {
+    const reportId = parseInt(req.params.id, 10);
+    // Assuming user_id comes from req.body (or query) for now until auth is added
+    const userId = req.body.user_id;
+
+    if (isNaN(reportId) || !userId) {
+      return res.status(400).json({ error: 'Invalid report ID or missing user_id' });
+    }
+
+    const removed = await ReportService.unsupportReport(reportId, userId);
+    if (!removed) {
+      return res.status(404).json({ error: 'Support not found' });
+    }
+    res.status(204).send();
+  } catch (error: any) {
+    console.error(`Error unsupporting report ${req.params.id}:`, error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};

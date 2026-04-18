@@ -14,24 +14,42 @@ datasource db {
 
 enum ReportStatus {
   Open
-  InProgress
-  Resolved
+  InProgress @map("In Progress")
   Closed
 }
 
+enum CategoryType {
+  Report
+  Task
+}
+
 model Report {
-  report_id        Int           @id @default(autoincrement())
+  report_id        Int             @id @default(autoincrement())
   requester_id     Int
-  category_id      Int
+  category_id      Int             // If this should use CategoryType, it would be 'category CategoryType', but keeping as requested
   city_id          Int
   description      String?
-  status           ReportStatus  @default(Open)
-  latitude         Decimal       @db.Decimal(10, 8)
-  longitude        Decimal       @db.Decimal(11, 8)
-  before_image_url String?       @db.VarChar(255)
-  support_count    Int           @default(1)
+  status           ReportStatus    @default(Open)
+  latitude         Decimal         @db.Decimal(10, 8)
+  longitude        Decimal         @db.Decimal(11, 8)
+  before_image_url String?         @db.VarChar(255)
+  support_count    Int             @default(1)
   incident_id      Int?
-  created_at       DateTime      @default(now())
+  created_at       DateTime        @default(now())
+
+  supports         ReportSupport[]
 
   @@map("reports")
+}
+
+model ReportSupport {
+  support_id Int      @id @default(autoincrement())
+  report_id  Int
+  user_id    Int
+  created_at DateTime @default(now())
+
+  report     Report   @relation(fields: [report_id], references: [report_id], onDelete: Cascade)
+
+  @@unique([report_id, user_id])
+  @@map("report_supports")
 }

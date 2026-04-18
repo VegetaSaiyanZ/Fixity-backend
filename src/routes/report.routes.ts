@@ -1,26 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import * as ReportController from '../controllers/report.controller';
 import { uploadReportImage } from '../middleware/uploadMiddleware';
 
 const router = Router();
-const prisma = new PrismaClient();
-
-// GET all reports from the database
-router.get('/', async (req: Request, res: Response) => {
-  try {
-    const reports = await prisma.report.findMany({
-      include: {
-        // Example of fetching related data (Joins)
-        category: true,
-        city: true
-      }
-    });
-    res.json(reports);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch reports' });
-  }
-});
 
 // POST upload a report image
 router.post('/upload', uploadReportImage.single('image'), (req: Request, res: Response): void => {
@@ -39,5 +21,14 @@ router.post('/upload', uploadReportImage.single('image'), (req: Request, res: Re
     imageUrl
   });
 });
+
+// Standard CRUD endpoints mapped to Controller
+router.post('/', ReportController.createReport);
+router.get('/', ReportController.getReports);
+router.get('/:id', ReportController.getReportById);
+router.put('/:id', ReportController.updateReport);
+router.delete('/:id', ReportController.deleteReport);
+router.post('/:id/support', ReportController.supportReport);
+router.delete('/:id/support', ReportController.unsupportReport);
 
 export default router;

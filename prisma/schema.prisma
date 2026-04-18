@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ReportStatus {
+  Open
+  InProgress
+  Resolved
+  Closed
+}
+
+model Report {
+  report_id        Int           @id @default(autoincrement())
+  requester_id     Int
+  category_id      Int
+  city_id          Int
+  description      String?
+  status           ReportStatus  @default(Open)
+  latitude         Decimal       @db.Decimal(10, 8)
+  longitude        Decimal       @db.Decimal(11, 8)
+  before_image_url String?       @db.VarChar(255)
+  support_count    Int           @default(1)
+  incident_id      Int?
+  created_at       DateTime      @default(now())
+
+  @@map("reports")
+}

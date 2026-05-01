@@ -14,17 +14,23 @@ enum UserRole {
   Citizen
   Worker
   Official
+
+  @@map("user_role")
 }
 
 enum ReportStatus {
   Open
   InProgress
   Closed
+
+  @@map("report_status")
 }
 
 enum CategoryType {
   Report
   Task
+
+  @@map("category_type")
 }
 
 model City {
@@ -58,12 +64,14 @@ model User {
 }
 
 model RefreshToken {
-  userId       Int      @id @map("user_id")
+  userId       Int      @map("user_id")
   refreshToken String   @unique @map("refresh_token") @db.VarChar(255)
   createdAt    DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [userId])
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
+  // This allows multiple tokens per user
+  @@id([userId, refreshToken])
   @@map("refresh_tokens")
 }
 
@@ -141,8 +149,8 @@ model ReportSupport {
   userId    Int      @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  report Report @relation(fields: [reportId], references: [reportId])
-  user   User   @relation(fields: [userId], references: [userId])
+  report Report @relation(fields: [reportId], references: [reportId], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@unique([reportId, userId])
   @@map("report_supports")

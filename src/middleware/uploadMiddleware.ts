@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 
 // Ensure uploads directory exists at project root
-const uploadDir = path.join(__dirname, '../../public/uploads');
+const uploadDir = path.join(__dirname, '../../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }

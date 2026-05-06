@@ -15,7 +15,7 @@ app.use(helmet());
 app.use(morgan('dev'));
 
 // Static path for uploads
-app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 app.use('/api', routes);

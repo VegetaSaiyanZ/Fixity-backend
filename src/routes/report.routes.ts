@@ -1,43 +1,21 @@
-import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Router } from 'express';
 import { uploadReportImage } from '../middleware/uploadMiddleware';
+import { ReportController } from '../controllers/report.controller';
 
 const router = Router();
-const prisma = new PrismaClient();
 
-// GET all reports from the database
-router.get('/', async (req: Request, res: Response) => {
-  try {
-    const reports = await prisma.report.findMany({
-      include: {
-        // Example of fetching related data (Joins)
-        category: true,
-        city: true
-      }
-    });
-    res.json(reports);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to fetch reports' });
-  }
-});
+// Routes for reports
+router.get('/', ReportController.getAll);
+router.get('/:id', ReportController.getById);
 
-// POST upload a report image
-router.post('/upload', uploadReportImage.single('image'), (req: Request, res: Response): void => {
-  // Multer handles the upload. If successful, req.file exists.
-  if (!req.file) {
-    res.status(400).json({ error: 'No file uploaded or invalid file format.' });
-    return;
-  }
+// Upload image and get AI analysis draft
+router.post('/upload-analyze', uploadReportImage.single('image'), ReportController.uploadAndAnalyze);
 
-  // Generate the public URL where the image can be viewed
-  // E.g: You would save this `imageUrl` variable to your PostgreSQL db when creating a Report!
-  const imageUrl = `/uploads/${req.file.filename}`;
+// Create report after user confirms draft
+router.post('/', ReportController.create);
 
-  res.status(200).json({
-    message: 'Image uploaded successfully!',
-    imageUrl
-  });
-});
+// Update/Delete reports
+router.patch('/:id', ReportController.update);
+router.delete('/:id', ReportController.delete);
 
 export default router;

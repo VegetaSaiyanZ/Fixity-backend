@@ -4,8 +4,8 @@ import { z } from "zod";
 // only accepts valid, properly-typed payload fields.
 export const CreateReportSchema = z.object({
   body: z.object({
-    requesterId: z.number().int().positive().optional(),
     categoryId: z.number().int().positive(),
+    cityId: z.number().int().positive(),
     description: z.string().min(1, "Description is required"),
     latitude: z.number(),
     longitude: z.number(),

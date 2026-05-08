@@ -13,6 +13,7 @@ datasource db {
 enum UserRole {
   Citizen
   Worker
+  Manager
   Official
 }
 
@@ -39,7 +40,9 @@ model City {
   name      String   @db.VarChar(100)
   createdAt DateTime @default(now()) @map("created_at")
 
-  users User[]
+  users     User[]
+  reports   Report[]
+  incidents Incident[]
 
   @@map("cities")
 }
@@ -88,6 +91,7 @@ model Category {
 
 model Incident {
   incidentId    Int       @id @default(autoincrement()) @map("incident_id")
+  cityId        Int       @map("city_id")
   description   String?   @db.Text
   latitude      Decimal   @db.Decimal(10, 8)
   longitude     Decimal   @db.Decimal(11, 8)
@@ -95,6 +99,7 @@ model Incident {
   createdAt     DateTime  @default(now()) @map("created_at")
   resolvedAt    DateTime? @map("resolved_at")
 
+  city    City     @relation(fields: [cityId], references: [cityId])
   reports Report[]
   tasks   Task[]
 
@@ -105,6 +110,7 @@ model Report {
   reportId       Int          @id @default(autoincrement()) @map("report_id")
   requesterId    Int          @map("requester_id")
   categoryId     Int          @map("category_id")
+  cityId         Int          @map("city_id")
   description    String       @db.Text
   status         ReportStatus @default(Open)
   latitude       Decimal      @db.Decimal(10, 8)
@@ -116,6 +122,7 @@ model Report {
 
   requester User            @relation("ReportRequester", fields: [requesterId], references: [userId])
   category  Category        @relation(fields: [categoryId], references: [categoryId])
+  city      City            @relation(fields: [cityId], references: [cityId])
   incident  Incident?       @relation(fields: [incidentId], references: [incidentId])
   supports  ReportSupport[]
 

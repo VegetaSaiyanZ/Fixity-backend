@@ -1,5 +1,8 @@
 import prisma from "@/prisma/client";
-import { CreateReportDTO, UpdateReportDTO } from "@/validations/report.validation";
+import {
+  CreateReportDTO,
+  UpdateReportDTO,
+} from "@/validations/report.validation";
 import { CustomError } from "@/middleware/error.middleware";
 import { AiService } from "@/services/ai.service";
 import fs from "fs";
@@ -18,8 +21,11 @@ export class ReportService {
     return { imageUrl, aiDraft };
   }
 
-  static async getAll() {
+  static async getAllOfUserCity(userId: number, userCityId: number) {
     return await prisma.report.findMany({
+      where: {
+        cityId: userCityId,
+      },
       include: {
         category: true,
         requester: {
@@ -47,13 +53,15 @@ export class ReportService {
     return report;
   }
 
-  static async create(userId: number, data: CreateReportDTO) {
-    const requesterId = data.requesterId || userId;
-
+  static async create(
+    userId: number,
+    data: CreateReportDTO,
+  ) {
     const newReport = await prisma.report.create({
       data: {
-        requesterId,
+        requesterId: userId,
         categoryId: data.categoryId,
+        cityId: data.cityId,
         description: data.description,
         latitude: data.latitude,
         longitude: data.longitude,
@@ -64,18 +72,22 @@ export class ReportService {
     return newReport;
   }
 
-  static async update(id: number, userId: number, userRole: UserRole, data: UpdateReportDTO) {
+  static async update(
+    id: number,
+    data: UpdateReportDTO,
+    userCityId: number | null,
+  ) {
     const report = await prisma.report.findUnique({
       where: { reportId: id },
-      select: { requesterId: true },
+      select: { requesterId: true, cityId: true },
     });
 
     if (!report) {
       throw new CustomError("Report not found", 404);
     }
 
-    if (userRole === UserRole.Citizen && report.requesterId !== userId) {
-      throw new CustomError("You can only update your own reports", 403);
+    if (report.cityId !== userCityId) {
+      throw new CustomError("You can only delete reports from your city", 403);
     }
 
     const updatedReport = await prisma.report.update({
@@ -86,18 +98,31 @@ export class ReportService {
     return updatedReport;
   }
 
-  static async delete(id: number, userId: number, userRole: UserRole) {
+  static async delete(
+    id: number,
+    userId: number,
+    userRole: UserRole,
+    userCityId: number | null,
+  ) {
     const report = await prisma.report.findUnique({
       where: { reportId: id },
-      select: { requesterId: true },
+      select: { requesterId: true, cityId: true, status: true },
     });
 
     if (!report) {
       throw new CustomError("Report not found", 404);
     }
 
-    if (userRole === UserRole.Citizen && report.requesterId !== userId) {
-      throw new CustomError("You can only delete your own reports", 403);
+    if (userRole !== UserRole.Manager) {
+      if (report.requesterId !== userId) {
+        throw new CustomError("You can only delete your own reports", 403);
+      } else if (report.status !== "Open") {
+        throw new CustomError("You can only delete open reports", 403);
+      }
+    }
+
+    if (report.cityId !== userCityId) {
+      throw new CustomError("You can only delete reports from your city", 403);
     }
 
     await prisma.report.delete({

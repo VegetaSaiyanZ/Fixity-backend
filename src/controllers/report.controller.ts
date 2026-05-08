@@ -17,13 +17,17 @@ export class ReportController {
     });
   }
 
-  static async getAll(req: Request, res: Response) {
-    const reports = await ReportService.getAll();
+  static async getAllOfUserCity(req: AuthRequest, res: Response) {
+    const userId = req.user!.userId;
+    const userCityId = req.user!.cityId;
+    if (!userCityId) throw new CustomError("Pick a city", 400);
+    const reports = await ReportService.getAllOfUserCity(userId, userCityId);
     res.status(200).json(reports);
   }
 
   static async getById(req: Request, res: Response) {
     const id = Number(req.params.id);
+
     if (isNaN(id)) throw new CustomError("Invalid report ID", 400);
 
     const report = await ReportService.getById(id);
@@ -32,21 +36,28 @@ export class ReportController {
 
   static async create(req: AuthRequest, res: Response) {
     const userId = req.user?.userId;
-    if (!userId) throw new CustomError("Unauthorized", 401);
+    const userCityId = req.user!.cityId;
 
-    const newReport = await ReportService.create(userId, req.body);
-    res.status(201).json({ message: "Report created successfully", report: newReport });
+    if (!userId) throw new CustomError("Unauthorized", 401);
+    if (!userCityId)
+      throw new CustomError("Pick a city before creating a report", 400);
+    const newReport = await ReportService.create(userId, req.body, userCityId);
+    res
+      .status(201)
+      .json({ message: "Report created successfully", report: newReport });
   }
 
   static async update(req: AuthRequest, res: Response) {
     const id = Number(req.params.id);
+    const userCityId = req.user!.cityId;
+
     if (isNaN(id)) throw new CustomError("Invalid report ID", 400);
 
     const userId = req.user?.userId;
     const userRole = req.user?.role;
     if (!userId || !userRole) throw new CustomError("Unauthorized", 401);
 
-    const updatedReport = await ReportService.update(id, userId, userRole, req.body);
+    const updatedReport = await ReportService.update(id, req.body, userCityId);
     res.status(200).json({
       message: "Report updated successfully",
       report: updatedReport,
@@ -57,11 +68,12 @@ export class ReportController {
     const id = Number(req.params.id);
     if (isNaN(id)) throw new CustomError("Invalid report ID", 400);
 
-    const userId = req.user?.userId;
-    const userRole = req.user?.role;
+    const userId = req.user!.userId;
+    const userRole = req.user!.role;
+    const userCityId = req.user!.cityId;
     if (!userId || !userRole) throw new CustomError("Unauthorized", 401);
 
-    const result = await ReportService.delete(id, userId, userRole);
+    const result = await ReportService.delete(id, userId, userRole, userCityId);
     res.status(200).json(result);
   }
 }

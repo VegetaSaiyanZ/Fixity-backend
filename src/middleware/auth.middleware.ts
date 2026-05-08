@@ -5,7 +5,7 @@ import { PrismaClient, UserRole } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export type AuthRequest = Request & {
-  user?: { userId: number; role: UserRole };
+  user?: { userId: number; role: UserRole; cityId: number | null };
 };
 
 export const authenticate = (allowedRoles?: UserRole[]) => {
@@ -21,7 +21,7 @@ export const authenticate = (allowedRoles?: UserRole[]) => {
       const tokenContent = AuthUtils.verifyToken(token);
       const user = await prisma.user.findUnique({
         where: { userId: parseInt(tokenContent.userId) },
-        select: { userId: true, role: true },
+        select: { userId: true, role: true, cityId: true },
       });
 
       if (!user) {
@@ -32,7 +32,7 @@ export const authenticate = (allowedRoles?: UserRole[]) => {
         return res.status(403).json({ message: "Insufficient permissions" });
       }
 
-      req.user = { userId: user.userId, role: user.role };
+      req.user = { userId: user.userId, role: user.role, cityId: user.cityId };
       next();
     } catch (error) {
       console.error("Authentication error:", error);

@@ -50,14 +50,7 @@ export class AuthController {
         message: "User signed up",
         token,
         refreshToken,
-        user: {
-          userId: user.userId,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          role: user.role,
-          cityId: user.cityId,
-        },
+        user: user,
       });
     } catch (error) {
       console.error("Signup error:", error);
@@ -102,14 +95,7 @@ export class AuthController {
         message: "User signed in",
         token,
         refreshToken,
-        user: {
-          userId: user.userId,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          role: user.role,
-          cityId: user.cityId,
-        },
+        user: user,
       });
     } catch (error) {
       console.error("Signin error:", error);

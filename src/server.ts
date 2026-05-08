@@ -1,18 +1,16 @@
-import app from '@/app';
-import dotenv from 'dotenv';
+import app from "@/app";
+import { EnvConfig } from "./handlers/env.handler";
 
-dotenv.config();
-
-const PORT = process.env.PORT || 3000;
+const PORT = EnvConfig.instance.PORT;
 
 const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
 // Handle graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
+process.on("SIGTERM", () => {
+  console.log("SIGTERM signal received: closing HTTP server");
   server.close(() => {
-    console.log('HTTP server closed');
+    console.log("HTTP server closed");
   });
 });

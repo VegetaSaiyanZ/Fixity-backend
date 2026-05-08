@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { randomUUID } from "crypto";
+import { EnvConfig } from "@/handlers/env.handler";
 
 export type TokenContent = {
   userId: string;
@@ -8,20 +9,20 @@ export type TokenContent = {
 
 export class AuthUtils {
   private static get _secret(): string {
-    return process.env.JWT_SECRET!;
+    return EnvConfig.instance.JWT_SECRET;
   }
 
   static generateAccessToken(tokenContent: TokenContent): string {
     const secret = this._secret;
-    const exp = Number(process.env.JWT_EXPIRES_IN);
-    return jwt.sign(tokenContent, secret, { expiresIn: exp });
+    return jwt.sign(tokenContent, secret, {
+      expiresIn: EnvConfig.instance.JWT_EXPIRES_IN,
+    });
   }
 
   static generateRefreshToken(tokenContent: TokenContent): string {
     const secret = this._secret;
-    const exp = Number(process.env.JWT_REFRESH_EXPIRES_IN);
     return jwt.sign(tokenContent, secret, {
-      expiresIn: exp,
+      expiresIn: EnvConfig.instance.JWT_REFRESH_EXPIRES_IN,
       jwtid: randomUUID(),
     });
   }

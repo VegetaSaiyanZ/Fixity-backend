@@ -32,6 +32,8 @@ model ReportCategory {
   reportCategoryId Int    @id @default(autoincrement()) @map("report_category_id")
   name             String @unique @db.VarChar(100)
 
+  reports Report[]
+
   @@map("report_categories")
 }
 
@@ -83,8 +85,7 @@ model Category {
   description String?       @db.Text
   type        CategoryType?
 
-  reports Report[]
-  tasks   Task[]
+  tasks Task[]
 
   @@map("categories")
 }
@@ -120,10 +121,10 @@ model Report {
   incidentId     Int?         @map("incident_id")
   createdAt      DateTime     @default(now()) @map("created_at")
 
-  requester User            @relation("ReportRequester", fields: [requesterId], references: [userId])
-  category  Category        @relation(fields: [categoryId], references: [categoryId])
-  city      City            @relation(fields: [cityId], references: [cityId])
-  incident  Incident?       @relation(fields: [incidentId], references: [incidentId])
+  requester User           @relation("ReportRequester", fields: [requesterId], references: [userId])
+  category  ReportCategory @relation(fields: [categoryId], references: [reportCategoryId])
+  city      City           @relation(fields: [cityId], references: [cityId])
+  incident  Incident?      @relation(fields: [incidentId], references: [incidentId])
   supports  ReportSupport[]
 
   @@map("reports")

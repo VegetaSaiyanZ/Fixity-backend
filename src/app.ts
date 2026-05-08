@@ -3,7 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
-import routes from './routes';
+import routes from '@/routes';
+import { errorHandler } from '@/middleware/error.middleware';
 
 const app: Application = express();
 
@@ -31,9 +32,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Global Error Handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Internal Server Error' });
-});
+app.use(errorHandler);
 
 export default app;

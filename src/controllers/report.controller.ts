@@ -1,186 +1,67 @@
 import { Request, Response } from "express";
-import { PrismaClient, UserRole } from "@prisma/client";
-import { AiService } from "../services/ai.service";
-import fs from "fs";
-import { AuthRequest } from "../middleware/auth.middleware";
-
-const prisma = new PrismaClient();
+import { AuthRequest } from "@/middleware/auth.middleware";
+import { ReportService } from "@/services/report.service";
+import { CustomError } from "@/middleware/error.middleware";
 
 export class ReportController {
-  static async uploadAndAnalyze(req: Request, res: Response): Promise<void> {
-    try {
-      if (!req.file) {
-        res.status(400).json({ error: "No image uploaded" });
-        return;
-      }
-
-      const imageUrl = `/uploads/${req.file.filename}`;
-      const filePath = req.file.path;
-
-      // Read file into buffer for the AI service
-      const fileBuffer = fs.readFileSync(filePath);
-      const mimeType = req.file.mimetype;
-
-      const aiDraft = await AiService.analyzeImage(fileBuffer, mimeType);
-
-      res.status(200).json({
-        message: "Image uploaded and analyzed successfully",
-        imageUrl,
-        aiDraft,
-      });
-    } catch (error) {
-      console.error("Error in uploadAndAnalyze:", error);
-      res.status(500).json({ error: "Failed to upload and analyze image" });
+  static async uploadAndAnalyze(req: Request, res: Response) {
+    if (!req.file) {
+      throw new CustomError("No image uploaded", 400);
     }
+
+    const result = await ReportService.uploadAndAnalyze(req.file);
+
+    res.status(200).json({
+      message: "Image uploaded and analyzed successfully",
+      ...result,
+    });
   }
 
-  static async getAll(req: Request, res: Response): Promise<void> {
-    try {
-      const reports = await prisma.report.findMany({
-        include: {
-          category: true,
-          city: true,
-          requester: {
-            select: { firstName: true, lastName: true },
-          },
-        },
-      });
-      res.status(200).json(reports);
-    } catch (error) {
-      console.error("Error fetching reports:", error);
-      res.status(500).json({ error: "Failed to fetch reports" });
-    }
+  static async getAll(req: Request, res: Response) {
+    const reports = await ReportService.getAll();
+    res.status(200).json(reports);
   }
 
-  static async getById(req: Request, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const report = await prisma.report.findUnique({
-        where: { reportId: Number(id) },
-        include: {
-          category: true,
-          city: true,
-          requester: {
-            select: { firstName: true, lastName: true },
-          },
-        },
-      });
+  static async getById(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    if (isNaN(id)) throw new CustomError("Invalid report ID", 400);
 
-      if (!report) {
-        res.status(404).json({ error: "Report not found" });
-        return;
-      }
-
-      res.status(200).json(report);
-    } catch (error) {
-      console.error("Error fetching report:", error);
-      res.status(500).json({ error: "Failed to fetch report" });
-    }
+    const report = await ReportService.getById(id);
+    res.status(200).json(report);
   }
 
-  static async create(req: Request, res: Response): Promise<void> {
-    try {
-      const {
-        requesterId,
-        categoryId,
-        cityId,
-        description,
-        latitude,
-        longitude,
-        beforeImageUrl,
-      } = req.body;
+  static async create(req: AuthRequest, res: Response) {
+    const userId = req.user?.userId;
+    if (!userId) throw new CustomError("Unauthorized", 401);
 
-      const newReport = await prisma.report.create({
-        data: {
-          requesterId: Number(requesterId),
-          categoryId: Number(categoryId),
-          cityId: Number(cityId),
-          description,
-          latitude,
-          longitude,
-          beforeImageUrl,
-        },
-      });
-
-      res
-        .status(201)
-        .json({ message: "Report created successfully", report: newReport });
-    } catch (error) {
-      console.error("Error creating report:", error);
-      res.status(500).json({ error: "Failed to create report" });
-    }
+    const newReport = await ReportService.create(userId, req.body);
+    res.status(201).json({ message: "Report created successfully", report: newReport });
   }
 
-  static async update(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const data = req.body;
-      const user = req.user!;
+  static async update(req: AuthRequest, res: Response) {
+    const id = Number(req.params.id);
+    if (isNaN(id)) throw new CustomError("Invalid report ID", 400);
 
-      // Fetch the report to check ownership
-      const report = await prisma.report.findUnique({
-        where: { reportId: Number(id) },
-        select: { requesterId: true },
-      });
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+    if (!userId || !userRole) throw new CustomError("Unauthorized", 401);
 
-      if (!report) {
-        res.status(404).json({ error: "Report not found" });
-        return;
-      }
-
-      // Check authorization: Citizens can only update their own reports
-      if (user.role === UserRole.Citizen && report.requesterId !== user.userId) {
-        res.status(403).json({ error: "You can only update your own reports" });
-        return;
-      }
-
-      const updatedReport = await prisma.report.update({
-        where: { reportId: Number(id) },
-        data,
-      });
-
-      res
-        .status(200)
-        .json({
-          message: "Report updated successfully",
-          report: updatedReport,
-        });
-    } catch (error) {
-      console.error("Error updating report:", error);
-      res.status(500).json({ error: "Failed to update report" });
-    }
+    const updatedReport = await ReportService.update(id, userId, userRole, req.body);
+    res.status(200).json({
+      message: "Report updated successfully",
+      report: updatedReport,
+    });
   }
 
-  static async delete(req: AuthRequest, res: Response): Promise<void> {
-    try {
-      const { id } = req.params;
-      const user = req.user!;
+  static async delete(req: AuthRequest, res: Response) {
+    const id = Number(req.params.id);
+    if (isNaN(id)) throw new CustomError("Invalid report ID", 400);
 
-      // Fetch the report to check ownership
-      const report = await prisma.report.findUnique({
-        where: { reportId: Number(id) },
-        select: { requesterId: true },
-      });
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+    if (!userId || !userRole) throw new CustomError("Unauthorized", 401);
 
-      if (!report) {
-        res.status(404).json({ error: "Report not found" });
-        return;
-      }
-
-      // Check authorization: Citizens can only delete their own reports
-      if (user.role === UserRole.Citizen && report.requesterId !== user.userId) {
-        res.status(403).json({ error: "You can only delete your own reports" });
-        return;
-      }
-
-      await prisma.report.delete({
-        where: { reportId: Number(id) },
-      });
-
-      res.status(200).json({ message: "Report deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting report:", error);
-      res.status(500).json({ error: "Failed to delete report" });
-    }
+    const result = await ReportService.delete(id, userId, userRole);
+    res.status(200).json(result);
   }
 }

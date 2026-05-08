@@ -92,7 +92,7 @@ model Incident {
   reports Report[]
   tasks   Task[]
 
-  @@map("incident")
+  @@map("incidents")
 }
 
 model Report {

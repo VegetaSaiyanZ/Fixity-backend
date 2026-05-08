@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { AuthUtils } from "../utils/auth.utils";
+import { AuthUtils } from "@/utils/auth.utils";
 import { PrismaClient, UserRole } from "@prisma/client";
 
 const prisma = new PrismaClient();

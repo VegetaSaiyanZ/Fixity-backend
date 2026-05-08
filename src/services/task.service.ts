@@ -44,7 +44,6 @@ export class TaskService {
         incidentId: data.incidentId,
         categoryId: data.categoryId,
         workerNotes: data.workerNotes,
-        afterImageUrl: data.afterImageUrl,
       },
     });
 
@@ -57,10 +56,6 @@ export class TaskService {
     userRole: UserRole,
     data: UpdateTaskStatusDTO
   ) {
-    if (userRole !== UserRole.Worker && userRole !== UserRole.Manager) {
-      throw new CustomError("Only Workers and Managers can update task status", 403);
-    }
-
     const task = await prisma.task.findUnique({
       where: { taskId: id },
     });
@@ -93,11 +88,7 @@ export class TaskService {
     return updatedTask;
   }
 
-  static async assignWorker(id: number, userId: number, userRole: UserRole) {
-    if (userRole !== UserRole.Worker) {
-      throw new CustomError("Only Workers can be assigned to tasks via this endpoint", 403);
-    }
-
+  static async assignWorker(id: number, userId: number) {
     const task = await prisma.task.findUnique({
       where: { taskId: id },
     });
@@ -148,11 +139,7 @@ export class TaskService {
     return updatedTask;
   }
 
-  static async updateImage(id: number, userId: number, userRole: UserRole, file: Express.Multer.File) {
-    if (userRole !== UserRole.Worker) {
-      throw new CustomError("Only Workers can update task images", 403);
-    }
-
+  static async updateImage(id: number, userId: number, file: Express.Multer.File) {
     const task = await prisma.task.findUnique({
       where: { taskId: id },
     });

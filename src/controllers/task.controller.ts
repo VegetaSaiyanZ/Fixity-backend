@@ -33,10 +33,9 @@ export class TaskController {
     if (isNaN(id)) throw new CustomError("Invalid task ID", 400);
 
     const userId = req.user?.userId;
-    const userRole = req.user?.role;
-    if (!userId || !userRole) throw new CustomError("Unauthorized", 401);
+    if (!userId) throw new CustomError("Unauthorized", 401);
 
-    const updatedTask = await TaskService.assignWorker(id, userId, userRole);
+    const updatedTask = await TaskService.assignWorker(id, userId);
     res.status(200).json({ message: "Task assigned successfully", task: updatedTask });
   }
 
@@ -57,10 +56,9 @@ export class TaskController {
     }
 
     const userId = req.user?.userId;
-    const userRole = req.user?.role;
-    if (!userId || !userRole) throw new CustomError("Unauthorized", 401);
+    if (!userId) throw new CustomError("Unauthorized", 401);
 
-    const updatedTask = await TaskService.updateImage(id, userId, userRole, req.file);
+    const updatedTask = await TaskService.updateImage(id, userId, req.file);
     res.status(200).json({ message: "Task image updated successfully", task: updatedTask });
   }
 }

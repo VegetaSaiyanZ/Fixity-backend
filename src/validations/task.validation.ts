@@ -5,7 +5,6 @@ export const CreateTaskSchema = z.object({
     incidentId: z.number().int().positive(),
     categoryId: z.number().int().positive(),
     workerNotes: z.string().optional(),
-    afterImageUrl: z.string().url().optional().or(z.literal("")),
   }),
 });
 

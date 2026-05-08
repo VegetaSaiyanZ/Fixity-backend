@@ -1,34 +1,40 @@
-import express, { Application, Request, Response, NextFunction } from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import path from 'path';
-import routes from '@/routes';
-import { errorHandler } from '@/middleware/error.middleware';
+import express, { Application, Request, Response, NextFunction } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import path from "path";
+import routes from "@/routes";
+import { errorHandler } from "@/middleware/error.middleware";
 
 const app: Application = express();
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Replace with your exact frontend URL
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    credentials: true, // Required if you are sending cookies or authorization headers
+  }),
+);
 app.use(helmet());
-app.use(morgan('dev'));
+app.use(morgan("dev"));
 
 // Static path for uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Routes
-app.use('/api', routes);
+app.use("/api", routes);
 
 // Base route
-app.get('/', (req: Request, res: Response) => {
-  res.status(200).json({ message: 'Welcome to the Express Backend API!' });
+app.get("/", (req: Request, res: Response) => {
+  res.status(200).json({ message: "Welcome to the Express Backend API!" });
 });
 
 // 404 Handler
 app.use((req: Request, res: Response, next: NextFunction) => {
-  res.status(404).json({ error: 'Endpoint not found' });
+  res.status(404).json({ error: "Endpoint not found" });
 });
 
 // Global Error Handler

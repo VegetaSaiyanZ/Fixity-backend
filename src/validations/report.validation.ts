@@ -6,22 +6,20 @@ export const CreateReportSchema = z.object({
   body: z.object({
     requesterId: z.number().int().positive().optional(),
     categoryId: z.number().int().positive(),
-    cityId: z.number().int().positive(),
-    description: z.string().optional(),
+    description: z.string().min(1, "Description is required"),
     latitude: z.number(),
     longitude: z.number(),
-    beforeImageUrl: z.string().url().optional().or(z.literal("")),
+    beforeImageUrl: z.string().optional(),
   }),
 });
 
 export const UpdateReportSchema = z.object({
   body: z.object({
     categoryId: z.number().int().positive().optional(),
-    cityId: z.number().int().positive().optional(),
     description: z.string().optional(),
     latitude: z.number().optional(),
     longitude: z.number().optional(),
-    beforeImageUrl: z.string().url().optional().or(z.literal("")),
+    beforeImageUrl: z.string().optional(),
     status: z.enum(["Open", "InProgress", "Resolved", "Closed"]).optional(),
   }),
 });

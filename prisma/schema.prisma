@@ -27,13 +27,19 @@ enum CategoryType {
   Task
 }
 
+model ReportCategory {
+  reportCategoryId Int    @id @default(autoincrement()) @map("report_category_id")
+  name             String @unique @db.VarChar(100)
+
+  @@map("report_categories")
+}
+
 model City {
   cityId    Int      @id @default(autoincrement()) @map("city_id")
   name      String   @db.VarChar(100)
   createdAt DateTime @default(now()) @map("created_at")
 
-  users   User[]
-  reports Report[]
+  users User[]
 
   @@map("cities")
 }
@@ -99,8 +105,7 @@ model Report {
   reportId       Int          @id @default(autoincrement()) @map("report_id")
   requesterId    Int          @map("requester_id")
   categoryId     Int          @map("category_id")
-  cityId         Int          @map("city_id")
-  description    String?      @db.Text
+  description    String       @db.Text
   status         ReportStatus @default(Open)
   latitude       Decimal      @db.Decimal(10, 8)
   longitude      Decimal      @db.Decimal(11, 8)
@@ -111,7 +116,6 @@ model Report {
 
   requester User            @relation("ReportRequester", fields: [requesterId], references: [userId])
   category  Category        @relation(fields: [categoryId], references: [categoryId])
-  city      City            @relation(fields: [cityId], references: [cityId])
   incident  Incident?       @relation(fields: [incidentId], references: [incidentId])
   supports  ReportSupport[]
 

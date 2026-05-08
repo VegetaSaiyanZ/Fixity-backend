@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/server.ts",
-    "build": "tsc && tsc-alias"
+    "build": "tsc && tsc-alias",
+    "db:seed": "ts-node prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

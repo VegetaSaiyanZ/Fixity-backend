@@ -22,9 +22,8 @@ export class ReportService {
     return await prisma.report.findMany({
       include: {
         category: true,
-        city: true,
         requester: {
-          select: { firstName: true, lastName: true },
+          select: { firstName: true, lastName: true, cityId: true },
         },
       },
     });
@@ -35,9 +34,8 @@ export class ReportService {
       where: { reportId: id },
       include: {
         category: true,
-        city: true,
         requester: {
-          select: { firstName: true, lastName: true },
+          select: { firstName: true, lastName: true, cityId: true },
         },
       },
     });
@@ -56,7 +54,6 @@ export class ReportService {
       data: {
         requesterId,
         categoryId: data.categoryId,
-        cityId: data.cityId,
         description: data.description,
         latitude: data.latitude,
         longitude: data.longitude,

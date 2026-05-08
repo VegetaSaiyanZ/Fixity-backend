@@ -5,7 +5,7 @@ import { PrismaClient, UserRole } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export type AuthRequest = Request & {
-  user?: { userId: number };
+  user?: { userId: number; role: UserRole };
 };
 
 export const authenticate = (allowedRoles?: UserRole[]) => {
@@ -32,7 +32,7 @@ export const authenticate = (allowedRoles?: UserRole[]) => {
         return res.status(403).json({ message: "Insufficient permissions" });
       }
 
-      req.user = { userId: user.userId };
+      req.user = { userId: user.userId, role: user.role };
       next();
     } catch (error) {
       console.error("Authentication error:", error);

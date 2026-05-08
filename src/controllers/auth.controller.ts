@@ -4,7 +4,6 @@ import { AuthUtils } from "../utils/auth.utils";
 
 const prisma = new PrismaClient();
 
-//TODO: alow multiple refresh tokens per user to support multiple devices
 export class AuthController {
   static async signup(req: Request, res: Response) {
     try {
@@ -43,10 +42,8 @@ export class AuthController {
         userId: user.userId.toString(),
       });
 
-      await prisma.refreshToken.upsert({
-        where: { userId: user.userId },
-        update: { refreshToken },
-        create: { userId: user.userId, refreshToken },
+      await prisma.refreshToken.create({
+        data: { userId: user.userId, refreshToken },
       });
 
       return res.status(201).json({
@@ -97,10 +94,8 @@ export class AuthController {
         userId: user.userId.toString(),
       });
 
-      await prisma.refreshToken.upsert({
-        where: { userId: user.userId },
-        update: { refreshToken },
-        create: { userId: user.userId, refreshToken },
+      await prisma.refreshToken.create({
+        data: { userId: user.userId, refreshToken },
       });
 
       return res.json({
@@ -141,13 +136,10 @@ export class AuthController {
       }
 
       const storedToken = await prisma.refreshToken.findUnique({
-        where: { userId: user.userId },
+        where: { refreshToken },
       });
 
-      if (!storedToken || storedToken.refreshToken !== refreshToken) {
-        if (storedToken) {
-          await prisma.refreshToken.delete({ where: { userId: user.userId } });
-        }
+      if (!storedToken) {
         return res
           .status(401)
           .json({ error: "Invalid or revoked refresh token" });
@@ -155,12 +147,12 @@ export class AuthController {
 
       const { token, refreshToken: newRefreshToken } = AuthUtils.generateTokens(
         {
-          userId: user.userId.toString(),
+          userId: storedToken.userId.toString(),
         },
       );
 
       await prisma.refreshToken.update({
-        where: { userId: user.userId },
+        where: { refreshTokenId: storedToken.refreshTokenId },
         data: { refreshToken: newRefreshToken },
       });
 
@@ -182,15 +174,14 @@ export class AuthController {
         return res.status(400).json({ error: "Refresh token is required" });
       }
 
-      const decoded = AuthUtils.verifyToken(refreshToken);
-      const userId = Number(decoded.userId);
-
       const storedToken = await prisma.refreshToken.findUnique({
-        where: { userId },
+        where: { refreshToken },
       });
 
-      if (storedToken && storedToken.refreshToken === refreshToken) {
-        await prisma.refreshToken.delete({ where: { userId } });
+      if (storedToken) {
+        await prisma.refreshToken.delete({
+          where: { refreshTokenId: storedToken.refreshTokenId },
+        });
       }
 
       return res.json({ message: "User signed out" });

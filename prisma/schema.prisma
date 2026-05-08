@@ -58,9 +58,10 @@ model User {
 }
 
 model RefreshToken {
-  userId       Int      @id @map("user_id")
-  refreshToken String   @unique @map("refresh_token") @db.VarChar(255)
-  createdAt    DateTime @default(now()) @map("created_at")
+  refreshTokenId Int      @id @default(autoincrement()) @map("refresh_token_id")
+  userId         Int      @map("user_id")
+  refreshToken   String   @unique @map("refresh_token") @db.VarChar(255)
+  createdAt      DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [userId])
 

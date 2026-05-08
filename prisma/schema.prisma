@@ -84,7 +84,7 @@ model Category {
 
 model Incident {
   incidentId    Int       @id @default(autoincrement()) @map("incident_id")
-  cityId        Int?      @map("city_id")
+  cityId        Int       @map("city_id")
   description   String?   @db.Text
   latitude      Decimal   @db.Decimal(10, 8)
   longitude     Decimal   @db.Decimal(11, 8)
@@ -92,7 +92,7 @@ model Incident {
   createdAt     DateTime  @default(now()) @map("created_at")
   resolvedAt    DateTime? @map("resolved_at")
 
-  city    City?    @relation(fields: [cityId], references: [cityId])
+  city    City     @relation(fields: [cityId], references: [cityId])
   reports Report[]
   tasks   Task[]
 

@@ -13,6 +13,7 @@ datasource db {
 enum UserRole {
   Citizen
   Worker
+  Manager
   Official
 }
 

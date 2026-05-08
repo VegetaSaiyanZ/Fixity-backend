@@ -1,4 +1,4 @@
-import { EnvConfig } from "@/handlers/env.handler";
+import { EnvHandler } from "@/handlers/env.handler";
 import { PrismaClient } from "@prisma/client";
 
 // Added prisma to the NodeJS global type
@@ -8,7 +8,7 @@ declare global {
 
 const prisma = global.prisma || new PrismaClient();
 
-if (EnvConfig.instance.NODE_ENV !== "production") {
+if (EnvHandler.instance.NODE_ENV !== "production") {
   global.prisma = prisma;
 }
 

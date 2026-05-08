@@ -13,8 +13,8 @@ type EnvVars = {
   readonly GEMINI_API_KEY: string;
 };
 
-export class EnvConfig implements EnvVars {
-  private static _instance: EnvConfig;
+export class EnvHandler implements EnvVars {
+  private static _instance: EnvHandler;
 
   readonly NODE_ENV: NodeEnv;
   readonly PORT: number;
@@ -42,11 +42,11 @@ export class EnvConfig implements EnvVars {
     this.GEMINI_API_KEY = this.asRequiredString("GEMINI_API_KEY");
   }
 
-  public static get instance(): EnvConfig {
-    if (!EnvConfig._instance) {
-      EnvConfig._instance = new EnvConfig();
+  public static get instance(): EnvHandler {
+    if (!EnvHandler._instance) {
+      EnvHandler._instance = new EnvHandler();
     }
-    return EnvConfig._instance;
+    return EnvHandler._instance;
   }
 
   private asRequiredString<T extends string>(name: string): T {

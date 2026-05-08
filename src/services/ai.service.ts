@@ -1,9 +1,9 @@
-import { EnvConfig } from "@/handlers/env.handler";
+import { EnvHandler } from "@/handlers/env.handler";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const genAI = new GoogleGenerativeAI(EnvConfig.instance.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(EnvHandler.instance.GEMINI_API_KEY);
 
 export interface AnalyzeImageResult {
   category: string;

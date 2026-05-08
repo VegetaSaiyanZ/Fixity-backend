@@ -1,7 +1,7 @@
 import app from "@/app";
-import { EnvConfig } from "./handlers/env.handler";
+import { EnvHandler } from "./handlers/env.handler";
 
-const PORT = EnvConfig.instance.PORT;
+const PORT = EnvHandler.instance.PORT;
 
 const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

@@ -13,9 +13,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
-    origin: "http://localhost:5173", // Replace with your exact frontend URL
+    origin: "http://localhost:5173",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true, // Required if you are sending cookies or authorization headers
+    credentials: true,
   }),
 );
 app.use(helmet());

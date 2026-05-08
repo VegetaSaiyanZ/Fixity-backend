@@ -21,8 +21,6 @@ async function main() {
       create: { name },
     });
   }
-
-  console.log("✅ Report categories seeded successfully.");
 }
 
 main()

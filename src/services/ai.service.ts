@@ -1,8 +1,9 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { PrismaClient } from '@prisma/client';
+import { EnvHandler } from "@/handlers/env.handler";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const genAI = new GoogleGenerativeAI(EnvHandler.instance.GEMINI_API_KEY);
 
 export interface AnalyzeImageResult {
   category: string;
@@ -11,20 +12,28 @@ export interface AnalyzeImageResult {
 }
 
 export class AiService {
-  static async analyzeImage(buffer: Buffer, mimeType: string): Promise<AnalyzeImageResult> {
-    const base64Data = buffer.toString('base64');
-    
+  static async analyzeImage(
+    buffer: Buffer,
+    mimeType: string,
+  ): Promise<AnalyzeImageResult> {
+    const base64Data = buffer.toString("base64");
+
     // Fetch categories from the database
     let categories: string[] = [];
     try {
-      const dbCategories = await prisma.category.findMany({ select: { name: true } });
-      categories = dbCategories.map(c => c.name);
+      const dbCategories = await prisma.category.findMany({
+        select: { name: true },
+      });
+      categories = dbCategories.map((c) => c.name);
     } catch (error) {
-      console.error('Failed to fetch categories from DB, falling back to empty list', error);
+      console.error(
+        "Failed to fetch categories from DB, falling back to empty list",
+        error,
+      );
     }
 
     if (categories.length === 0) {
-      categories = ['Other']; // Fallback
+      categories = ["Other"]; // Fallback
     }
 
     const prompt = `
@@ -37,16 +46,16 @@ Return ONLY a strict JSON object with the following schema:
 }
 
 Allowed categories:
-${categories.map(c => `- ${c}`).join('\n')}
+${categories.map((c) => `- ${c}`).join("\n")}
 
 If the image doesn't clearly match a category, use "Other" or the closest match.
 Make sure the JSON is valid.
 `;
 
     try {
-      const model = genAI.getGenerativeModel({ 
-        model: 'gemini-2.5-flash',
-        generationConfig: { responseMimeType: 'application/json' }
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" },
       });
 
       const result = await model.generateContent([
@@ -63,7 +72,7 @@ Make sure the JSON is valid.
       const text = response.text();
       return JSON.parse(text) as AnalyzeImageResult;
     } catch (error) {
-      console.error('Error analyzing image with Gemini:', error);
+      console.error("Error analyzing image with Gemini:", error);
       throw error;
     }
   }
@@ -77,12 +86,12 @@ ${statsText}
 `;
 
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const result = await model.generateContent(prompt);
       const response = await result.response;
       return response.text().trim();
     } catch (error) {
-      console.error('Error generating summary with Gemini:', error);
+      console.error("Error generating summary with Gemini:", error);
       throw error;
     }
   }

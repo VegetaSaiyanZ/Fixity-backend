@@ -1,0 +1,28 @@
+import { Request, Response, NextFunction } from "express";
+import { ZodSchema, ZodError } from "zod";
+
+// This middleware executes Zod schemas against incoming request payloads (body, query, params). 
+// If validation fails, it blocks the request and returns a 400 Bad Request with details.
+export const validate = (schema: ZodSchema) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await schema.parseAsync({
+        body: req.body,
+        query: req.query,
+        params: req.params,
+      });
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({
+          error: "Validation failed",
+          details: error.issues.map((e) => ({
+            path: e.path.join("."),
+            message: e.message,
+          })),
+        });
+      }
+      next(error);
+    }
+  };
+};

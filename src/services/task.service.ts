@@ -147,4 +147,33 @@ export class TaskService {
 
     return updatedTask;
   }
+
+  static async updateImage(id: number, userId: number, userRole: UserRole, file: Express.Multer.File) {
+    if (userRole !== UserRole.Worker) {
+      throw new CustomError("Only Workers can update task images", 403);
+    }
+
+    const task = await prisma.task.findUnique({
+      where: { taskId: id },
+    });
+
+    if (!task) {
+      throw new CustomError("Task not found", 404);
+    }
+
+    if (task.assignedWorkerId !== userId) {
+      throw new CustomError("You can only upload images for tasks assigned to you", 403);
+    }
+
+    const imageUrl = `/uploads/${file.filename}`;
+
+    const updatedTask = await prisma.task.update({
+      where: { taskId: id },
+      data: {
+        afterImageUrl: imageUrl,
+      },
+    });
+
+    return updatedTask;
+  }
 }

@@ -11,7 +11,7 @@ export const CreateTaskSchema = z.object({
 
 export const UpdateTaskStatusSchema = z.object({
   body: z.object({
-    status: z.enum(["Open", "InProgress", "Closed"]),
+    status: z.enum(["Closed"]),
   }),
 });
 

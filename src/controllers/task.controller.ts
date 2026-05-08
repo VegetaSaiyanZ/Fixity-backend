@@ -47,4 +47,20 @@ export class TaskController {
     const updatedTask = await TaskService.linkToIncident(id, req.body);
     res.status(200).json({ message: "Task linked to incident successfully", task: updatedTask });
   }
+
+  static async uploadImage(req: AuthRequest, res: Response) {
+    const id = Number(req.params.id);
+    if (isNaN(id)) throw new CustomError("Invalid task ID", 400);
+
+    if (!req.file) {
+      throw new CustomError("No image file provided", 400);
+    }
+
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+    if (!userId || !userRole) throw new CustomError("Unauthorized", 401);
+
+    const updatedTask = await TaskService.updateImage(id, userId, userRole, req.file);
+    res.status(200).json({ message: "Task image updated successfully", task: updatedTask });
+  }
 }

@@ -35,11 +35,10 @@ export class ReportController {
   }
 
   static async create(req: AuthRequest, res: Response) {
-    const userId = req.user?.userId;
+    const userId = req.user!.userId;
+    const userCityId = req.user!.cityId;
 
-    if (!userId) throw new CustomError("Unauthorized", 401);
-
-    const newReport = await ReportService.create(userId, req.body);
+    const newReport = await ReportService.create(userId, req.body, userCityId);
     res
       .status(201)
       .json({ message: "Report created successfully", report: newReport });
@@ -51,8 +50,8 @@ export class ReportController {
 
     if (isNaN(id)) throw new CustomError("Invalid report ID", 400);
 
-    const userId = req.user?.userId;
-    const userRole = req.user?.role;
+    const userId = req.user!.userId;
+    const userRole = req.user!.role;
     if (!userId || !userRole) throw new CustomError("Unauthorized", 401);
 
     const updatedReport = await ReportService.update(id, req.body, userCityId);

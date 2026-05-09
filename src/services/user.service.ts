@@ -25,16 +25,6 @@ export class UserService {
   }
 
   static async updateMe(userId: number, data: UpdateUserDTO) {
-    if (data.cityId) {
-      const city = await prisma.city.findUnique({
-        where: { cityId: data.cityId },
-      });
-
-      if (!city) {
-        throw new CustomError("City not found", 400);
-      }
-    }
-
     const updatedUser = await prisma.user.update({
       where: { userId },
       data,

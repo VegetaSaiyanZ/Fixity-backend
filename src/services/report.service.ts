@@ -56,12 +56,13 @@ export class ReportService {
   static async create(
     userId: number,
     data: CreateReportDTO,
+    userCityId: number,
   ) {
     const newReport = await prisma.report.create({
       data: {
         requesterId: userId,
         categoryId: data.categoryId,
-        cityId: data.cityId,
+        cityId: userCityId,
         description: data.description,
         latitude: data.latitude,
         longitude: data.longitude,
@@ -72,11 +73,7 @@ export class ReportService {
     return newReport;
   }
 
-  static async update(
-    id: number,
-    data: UpdateReportDTO,
-    userCityId: number | null,
-  ) {
+  static async update(id: number, data: UpdateReportDTO, userCityId: number) {
     const report = await prisma.report.findUnique({
       where: { reportId: id },
       select: { requesterId: true, cityId: true },
@@ -87,7 +84,7 @@ export class ReportService {
     }
 
     if (report.cityId !== userCityId) {
-      throw new CustomError("You can only delete reports from your city", 403);
+      throw new CustomError("You can only update reports from your city", 403);
     }
 
     const updatedReport = await prisma.report.update({

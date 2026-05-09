@@ -25,6 +25,12 @@ export class ReportController {
     res.status(200).json(reports);
   }
 
+  static async getMyReports(req: AuthRequest, res: Response) {
+    const userId = req.user!.userId;
+    const reports = await ReportService.getByUser(userId);
+    res.status(200).json(reports);
+  }
+
   static async getById(req: Request, res: Response) {
     const id = Number(req.params.id);
 

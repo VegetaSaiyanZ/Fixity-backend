@@ -9,20 +9,38 @@ export class TaskService {
       throw new CustomError("User does not have a city assigned", 400);
     }
 
-    return await prisma.task.findMany({
+    const tasks = await prisma.task.findMany({
       where: {
         incident: {
           cityId: userCityId,
         },
       },
       include: {
-        incident: true,
-        category: true,
-        assignedWorker: {
-          select: { firstName: true, lastName: true },
+        incident: {
+          select: {
+            incidentId: true,
+            description: true,
+            priorityScore: true,
+            latitude: true,
+            longitude: true,
+            createdAt: true,
+          },
+        },
+        category: {
+          select: {
+            name: true,
+          },
         },
       },
     });
+
+    return tasks.map((task) => ({
+      ...task,
+      incident: {
+        ...task.incident,
+        priorityScore: task.incident.priorityScore ? Number(task.incident.priorityScore) : 0,
+      },
+    }));
   }
 
   static async create(data: CreateTaskDTO, userCityId: number | null) {
@@ -81,9 +99,33 @@ export class TaskService {
       where: { taskId: id },
       data: {
         status: data.status,
+        workerNotes: data.cityResponse,
         resolvedAt,
       },
     });
+
+    // If task is closed, check if incident should also be closed
+    if (data.status === "Closed") {
+      const remainingTasks = await prisma.task.findMany({
+        where: {
+          incidentId: task.incidentId,
+          status: { not: "Closed" },
+        },
+      });
+
+      if (remainingTasks.length === 0) {
+        // All tasks closed -> close incident and reports
+        await prisma.incident.update({
+          where: { incidentId: task.incidentId },
+          data: { status: "Closed", resolvedAt: new Date() },
+        });
+
+        await prisma.report.updateMany({
+          where: { incidentId: task.incidentId },
+          data: { status: "Closed" },
+        });
+      }
+    }
 
     return updatedTask;
   }
@@ -105,8 +147,14 @@ export class TaskService {
       where: { taskId: id },
       data: {
         assignedWorkerId: userId,
-        status: "InProgress", // Auto-update status when assigned
+        status: "Assigned", // Auto-update status when assigned
       },
+    });
+
+    // Also update incident status to Assigned
+    await prisma.incident.update({
+      where: { incidentId: task.incidentId },
+      data: { status: "Assigned" },
     });
 
     return updatedTask;

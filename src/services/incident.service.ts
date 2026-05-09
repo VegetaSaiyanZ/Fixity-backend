@@ -48,12 +48,12 @@ export class IncidentService {
         },
       });
 
-      // 3. Link reports to this incident and set status to InProgress
+      // 3. Link reports to this incident and set status to Assigned
       await tx.report.updateMany({
         where: { reportId: { in: data.reportIds } },
         data: {
           incidentId: newIncident.incidentId,
-          status: "InProgress",
+          status: "Assigned",
         },
       });
 

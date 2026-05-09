@@ -6,14 +6,20 @@ import { ZodSchema, ZodError } from "zod";
 export const validate = (schema: ZodSchema) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await schema.parseAsync({
+      const parsed = await schema.parseAsync({
         body: req.body,
         query: req.query,
         params: req.params,
       });
+      
+      if (parsed.body) req.body = parsed.body;
+      if (parsed.query) req.query = parsed.query;
+      if (parsed.params) req.params = parsed.params;
+      
       next();
     } catch (error) {
       if (error instanceof ZodError) {
+        console.error("Validation Error for", req.originalUrl, ":", JSON.stringify(error.issues, null, 2));
         return res.status(400).json({
           error: "Validation failed",
           details: error.issues.map((e) => ({

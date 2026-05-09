@@ -14,7 +14,7 @@ router.post("/", authenticate(["Manager", "Official"]), validate(CreateTaskSchem
 router.patch("/:id/status", authenticate(["Worker", "Manager"]), validate(UpdateTaskStatusSchema), asyncHandler(TaskController.updateStatus));
 router.patch("/:id/assign", authenticate(["Worker"]), asyncHandler(TaskController.assignWorker));
 router.patch("/:id/link", authenticate(["Manager", "Official"]), validate(LinkTaskSchema), asyncHandler(TaskController.linkToIncident));
-router.patch("/:id/image", authenticate(["Worker"]), uploadReportImage.single("image"), asyncHandler(TaskController.uploadImage));
+router.post("/:id/image", authenticate(["Worker"]), uploadReportImage.single("image"), asyncHandler(TaskController.uploadImage));
 router.patch("/:id", authenticate(["Manager", "Official"]), asyncHandler(TaskController.update));
 router.delete("/:id", authenticate(["Manager", "Official"]), asyncHandler(TaskController.delete));
 

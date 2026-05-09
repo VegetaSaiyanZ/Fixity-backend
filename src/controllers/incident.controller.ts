@@ -35,4 +35,20 @@ export class IncidentController {
     const result = await IncidentService.delete(id, userCityId);
     res.status(200).json(result);
   }
+
+  static async addReports(req: AuthRequest, res: Response) {
+    const id = Number(req.params.id);
+    const { reportIds } = req.body;
+    const userCityId = req.user!.cityId;
+    const result = await IncidentService.addReports(id, reportIds, userCityId);
+    res.status(200).json(result);
+  }
+
+  static async removeReport(req: AuthRequest, res: Response) {
+    const id = Number(req.params.id);
+    const reportId = Number(req.params.reportId);
+    const userCityId = req.user!.cityId;
+    const result = await IncidentService.removeReport(id, reportId, userCityId);
+    res.status(200).json(result);
+  }
 }

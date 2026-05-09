@@ -1,5 +1,9 @@
 import prisma from "@/prisma/client";
-import { CreateTaskDTO, UpdateTaskStatusDTO, LinkTaskDTO } from "@/validations/task.validation";
+import {
+  CreateTaskDTO,
+  UpdateTaskStatusDTO,
+  LinkTaskDTO,
+} from "@/validations/task.validation";
 import { CustomError } from "@/middleware/error.middleware";
 import { UserRole } from "@prisma/client";
 
@@ -43,7 +47,7 @@ export class TaskService {
     }));
   }
 
-  static async create(data: CreateTaskDTO, userCityId: number | null) {
+  static async create(data: CreateTaskDTO, userCityId: number) {
     // Validate that the incident belongs to the user's city
     const incident = await prisma.incident.findUnique({
       where: { incidentId: data.incidentId },
@@ -53,8 +57,11 @@ export class TaskService {
       throw new CustomError("Incident not found", 404);
     }
 
-    if (userCityId && incident.cityId !== userCityId) {
-      throw new CustomError("You can only create tasks for incidents in your city", 403);
+    if (incident.cityId !== userCityId) {
+      throw new CustomError(
+        "You can only create tasks for incidents in your city",
+        403,
+      );
     }
 
     const newTask = await prisma.task.create({
@@ -72,7 +79,7 @@ export class TaskService {
     id: number,
     userId: number,
     userRole: UserRole,
-    data: UpdateTaskStatusDTO
+    data: UpdateTaskStatusDTO,
   ) {
     const task = await prisma.task.findUnique({
       where: { taskId: id },
@@ -187,7 +194,11 @@ export class TaskService {
     return updatedTask;
   }
 
-  static async updateImage(id: number, userId: number, file: Express.Multer.File) {
+  static async updateImage(
+    id: number,
+    userId: number,
+    file: Express.Multer.File,
+  ) {
     const task = await prisma.task.findUnique({
       where: { taskId: id },
     });
@@ -197,7 +208,10 @@ export class TaskService {
     }
 
     if (task.assignedWorkerId !== userId) {
-      throw new CustomError("You can only upload images for tasks assigned to you", 403);
+      throw new CustomError(
+        "You can only upload images for tasks assigned to you",
+        403,
+      );
     }
 
     const imageUrl = `/uploads/${file.filename}`;

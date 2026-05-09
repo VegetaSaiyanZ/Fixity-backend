@@ -5,7 +5,7 @@ import { PrismaClient, UserRole } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export type AuthRequest = Request & {
-  user?: { userId: number; role: UserRole; cityId: number | null };
+  user?: { userId: number; role: UserRole; cityId: number };
 };
 
 export const authenticate = (allowedRoles?: UserRole[]) => {

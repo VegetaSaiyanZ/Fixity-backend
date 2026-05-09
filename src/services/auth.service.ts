@@ -1,12 +1,17 @@
 import prisma from "@/prisma/client";
 import { AuthUtils } from "@/utils/auth.utils";
-import { SignupDTO, SigninDTO, RefreshDTO, SignoutDTO } from "@/validations/auth.validation";
+import {
+  SignupDTO,
+  SigninDTO,
+  RefreshDTO,
+  SignoutDTO,
+} from "@/validations/auth.validation";
 import { CustomError } from "@/middleware/error.middleware";
 import { UserRole } from "@prisma/client";
 
 export class AuthService {
   static async signup(data: SignupDTO) {
-    const { firstName, lastName, email, password } = data;
+    const { firstName, lastName, email, password, cityId } = data;
 
     const existingEmail = await prisma.user.findUnique({
       where: { email },
@@ -18,6 +23,14 @@ export class AuthService {
 
     const hashedPassword = await AuthUtils.hashPassword(password);
 
+    const city = await prisma.city.findUnique({
+      where: { cityId: cityId },
+    });
+
+    if (!city) {
+      throw new CustomError("City not found", 400);
+    }
+
     const user = await prisma.user.create({
       data: {
         firstName,
@@ -25,6 +38,7 @@ export class AuthService {
         email,
         passwordHash: hashedPassword,
         role: UserRole.Citizen,
+        cityId,
       },
     });
 
@@ -52,7 +66,7 @@ export class AuthService {
 
     const isPasswordValid = await AuthUtils.comparePassword(
       password,
-      user.passwordHash
+      user.passwordHash,
     );
 
     if (!isPasswordValid) {

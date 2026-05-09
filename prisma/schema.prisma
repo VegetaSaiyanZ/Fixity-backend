@@ -56,10 +56,10 @@ model User {
   lastName     String   @map("last_name") @db.VarChar(50)
   email        String   @unique @db.VarChar(150)
   passwordHash String   @map("password_hash") @db.VarChar(255)
-  cityId       Int?     @map("city_id")
+  cityId       Int      @map("city_id")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  city          City?           @relation(fields: [cityId], references: [cityId])
+  city          City           @relation(fields: [cityId], references: [cityId])
   refreshTokens RefreshToken[]
   reports       Report[]        @relation("ReportRequester")
   tasks         Task[]          @relation("TaskAssignedWorker")

@@ -10,7 +10,10 @@ export const CreateTaskSchema = z.object({
 
 export const UpdateTaskStatusSchema = z.object({
   body: z.object({
-    status: z.enum(["Closed"]),
+    status: z.enum(["Closed", "closed"]).transform((val) => 
+      val === "closed" ? "Closed" : val
+    ),
+    cityResponse: z.string().min(1, "City response is required"),
   }),
 });
 

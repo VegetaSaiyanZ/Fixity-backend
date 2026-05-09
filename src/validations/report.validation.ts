@@ -20,7 +20,7 @@ export const UpdateReportSchema = z.object({
     latitude: z.number().optional(),
     longitude: z.number().optional(),
     beforeImageUrl: z.string().optional(),
-    status: z.enum(["Open", "InProgress", "Resolved", "Closed"]).optional(),
+    status: z.enum(["Open", "Assigned", "Resolved", "Closed"]).optional(),
   }),
 });
 

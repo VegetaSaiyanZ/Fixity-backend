@@ -6,6 +6,7 @@ import {
 } from "@/validations/task.validation";
 import { CustomError } from "@/middleware/error.middleware";
 import { UserRole } from "@prisma/client";
+import { PriorityUtils } from "@/utils/priority.util";
 
 export class TaskService {
   static async getAllByCity(userCityId: number | null) {
@@ -38,13 +39,18 @@ export class TaskService {
       },
     });
 
-    return tasks.map((task) => ({
-      ...task,
-      incident: {
-        ...task.incident,
-        priorityScore: task.incident.priorityScore ? Number(task.incident.priorityScore) : 0,
-      },
-    }));
+    return tasks
+      .map((task) => ({
+        ...task,
+        incident: {
+          ...task.incident,
+          priorityScore: PriorityUtils.getDynamicScore(
+            task.incident.priorityScore ? Number(task.incident.priorityScore) : 0,
+            task.incident.createdAt,
+          ),
+        },
+      }))
+      .sort((a, b) => (b.incident.priorityScore as number) - (a.incident.priorityScore as number));
   }
 
   static async create(data: CreateTaskDTO, userCityId: number) {

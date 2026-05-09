@@ -31,6 +31,7 @@ export class ReportService {
         requester: {
           select: { firstName: true, lastName: true, cityId: true },
         },
+        supports: true,
       },
     });
   }
@@ -42,6 +43,7 @@ export class ReportService {
       },
       include: {
         category: true,
+        supports: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -57,6 +59,7 @@ export class ReportService {
         requester: {
           select: { firstName: true, lastName: true, cityId: true },
         },
+        supports: true,
       },
     });
 
@@ -141,5 +144,67 @@ export class ReportService {
     });
 
     return { message: "Report deleted successfully" };
+  }
+
+  static async supportReport(userId: number, reportId: number) {
+    // 1. Get report to check requester
+    const report = await prisma.report.findUnique({
+      where: { reportId },
+      select: { requesterId: true, incidentId: true },
+    });
+
+    if (!report) throw new CustomError("Report not found", 404);
+    if (report.requesterId === userId) {
+      throw new CustomError("You cannot support your own report", 400);
+    }
+
+    // 2. Check if already supported
+    const existingSupport = await prisma.reportSupport.findUnique({
+      where: {
+        reportId_userId: { reportId, userId },
+      },
+    });
+
+    return await prisma.$transaction(async (tx) => {
+      if (existingSupport) {
+        // UN-SUPPORT
+        await tx.reportSupport.delete({
+          where: { reportId_userId: { reportId, userId } },
+        });
+
+        const updatedReport = await tx.report.update({
+          where: { reportId },
+          data: { supportCount: { decrement: 1 } },
+        });
+
+        if (updatedReport.incidentId) {
+          await tx.incident.update({
+            where: { incidentId: updatedReport.incidentId },
+            data: { priorityScore: { decrement: 5 } },
+          });
+        }
+
+        return { message: "Support removed", supported: false, supportCount: updatedReport.supportCount };
+      } else {
+        // SUPPORT
+        await tx.reportSupport.create({
+          data: { reportId, userId },
+        });
+
+        const updatedReport = await tx.report.update({
+          where: { reportId },
+          data: { supportCount: { increment: 1 } },
+        });
+
+        if (updatedReport.incidentId) {
+          await tx.incident.update({
+            where: { incidentId: updatedReport.incidentId },
+            data: { priorityScore: { increment: 5 } },
+          });
+        }
+
+        return { message: "Support added", supported: true, supportCount: updatedReport.supportCount };
+      }
+    });
   }
 }

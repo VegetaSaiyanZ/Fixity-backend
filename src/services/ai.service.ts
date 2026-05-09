@@ -105,4 +105,39 @@ ${statsText}
       throw error;
     }
   }
+
+  static async getSeverity(description: string): Promise<number> {
+    const prompt = `
+You are an expert Smart City incident analyzer. Evaluate the severity of the following incident description on a scale of 1 to 10.
+- 1-3: Low (minor graffiti, small pothole, non-blocking trash)
+- 4-6: Medium (clogged drain, broken streetlight, large pothole)
+- 7-8: High (broken water main, major road obstruction, dangerous electrical wires)
+- 9-10: Critical (immediate danger to life, gas leak, building collapse)
+
+Return ONLY a strict JSON object with the following schema:
+{
+  "severity": <number between 1 and 10>
+}
+
+Description:
+${description}
+`;
+
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" },
+      });
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      const parsed = JSON.parse(text);
+
+      return Math.min(Math.max(Number(parsed.severity) || 1, 1), 10);
+    } catch (error) {
+      console.error("Error getting severity from Gemini:", error);
+      return 1; // Default to 1 on error
+    }
+  }
 }

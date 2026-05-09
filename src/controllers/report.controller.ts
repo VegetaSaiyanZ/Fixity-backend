@@ -79,4 +79,14 @@ export class ReportController {
     const result = await ReportService.delete(id, userId, userRole, userCityId);
     res.status(200).json(result);
   }
+
+  static async supportReport(req: AuthRequest, res: Response) {
+    const reportId = Number(req.params.id);
+    const userId = req.user!.userId;
+
+    if (isNaN(reportId)) throw new CustomError("Invalid report ID", 400);
+
+    const result = await ReportService.supportReport(userId, reportId);
+    res.status(200).json(result);
+  }
 }

@@ -78,4 +78,18 @@ export class TaskController {
       .status(200)
       .json({ message: "Task image updated successfully", task: updatedTask });
   }
+
+  static async update(req: AuthRequest, res: Response) {
+    const id = Number(req.params.id);
+    if (isNaN(id)) throw new CustomError("Invalid task ID", 400);
+    const updatedTask = await TaskService.update(id, req.body);
+    res.status(200).json({ message: "Task updated successfully", task: updatedTask });
+  }
+
+  static async delete(req: AuthRequest, res: Response) {
+    const id = Number(req.params.id);
+    if (isNaN(id)) throw new CustomError("Invalid task ID", 400);
+    const result = await TaskService.delete(id);
+    res.status(200).json(result);
+  }
 }

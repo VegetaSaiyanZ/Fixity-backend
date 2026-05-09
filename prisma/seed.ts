@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  const categories = [
+  const reportCategoryNames = [
     "Electrical",
     "Plumbing",
     "Safety Hazard",
@@ -14,7 +14,7 @@ async function main() {
     "Other",
   ];
 
-  for (const name of categories) {
+  for (const name of reportCategoryNames) {
     await prisma.reportCategory.upsert({
       where: { name },
       update: {},
@@ -43,10 +43,6 @@ async function main() {
     { id: 18, name: "Ra'anana" },
     { id: 19, name: "Hadera" },
     { id: 20, name: "Lod" },
-    ...Array.from({ length: 80 }, (_, i) => ({
-      id: 21 + i,
-      name: `City ${21 + i}`,
-    })),
   ];
 
   for (const city of cities) {
@@ -57,6 +53,24 @@ async function main() {
         cityId: city.id,
         name: city.name,
       },
+    });
+  }
+
+  const taskCategories = [
+    { name: "Electrical Repair", type: "Task" },
+    { name: "Plumbing Repair", type: "Task" },
+    { name: "Road Repair", type: "Task" },
+    { name: "Cleanup", type: "Task" },
+    { name: "Inspection", type: "Task" },
+    { name: "Streetlight Repair", type: "Task" },
+    { name: "General Maintenance", type: "Task" },
+  ] as const;
+
+  for (const cat of taskCategories) {
+    await prisma.category.upsert({
+      where: { name: cat.name },
+      update: {},
+      create: { name: cat.name, type: cat.type },
     });
   }
 }

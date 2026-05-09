@@ -173,4 +173,24 @@ export class TaskService {
 
     return updatedTask;
   }
+
+  static async update(id: number, data: { workerNotes?: string; categoryId?: number }) {
+    const task = await prisma.task.findUnique({ where: { taskId: id } });
+    if (!task) throw new CustomError("Task not found", 404);
+    return await prisma.task.update({
+      where: { taskId: id },
+      data: {
+        workerNotes: data.workerNotes,
+        categoryId: data.categoryId,
+      },
+      include: { category: true },
+    });
+  }
+
+  static async delete(id: number) {
+    const task = await prisma.task.findUnique({ where: { taskId: id } });
+    if (!task) throw new CustomError("Task not found", 404);
+    await prisma.task.delete({ where: { taskId: id } });
+    return { message: "Task deleted successfully" };
+  }
 }

@@ -35,6 +35,20 @@ export class ReportService {
     });
   }
 
+  static async getByUser(userId: number) {
+    return await prisma.report.findMany({
+      where: {
+        requesterId: userId,
+      },
+      include: {
+        category: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  }
+
   static async getById(id: number) {
     const report = await prisma.report.findUnique({
       where: { reportId: id },

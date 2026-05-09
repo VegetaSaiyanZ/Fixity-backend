@@ -17,6 +17,7 @@ router.get(
   authenticate(),
   asyncHandler(ReportController.getAllOfUserCity),
 );
+router.get("/me", authenticate(), asyncHandler(ReportController.getMyReports));
 router.get("/:id", authenticate(), asyncHandler(ReportController.getById));
 
 // Upload image and get AI analysis draft

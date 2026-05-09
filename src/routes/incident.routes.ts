@@ -13,4 +13,7 @@ router.post("/", authenticate(["Manager", "Official"]), validate(CreateIncidentS
 router.patch("/:id", authenticate(["Manager", "Official"]), asyncHandler(IncidentController.update));
 router.delete("/:id", authenticate(["Manager", "Official"]), asyncHandler(IncidentController.delete));
 
+router.post("/:id/reports", authenticate(["Manager", "Official"]), asyncHandler(IncidentController.addReports));
+router.delete("/:id/reports/:reportId", authenticate(["Manager", "Official"]), asyncHandler(IncidentController.removeReport));
+
 export default router;

@@ -1,4 +1,5 @@
 import prisma from "@/prisma/client";
+import { ReportStatus } from "@prisma/client";
 import { CreateIncidentDTO } from "@/validations/incident.validation";
 import { CustomError } from "@/middleware/error.middleware";
 
@@ -56,7 +57,7 @@ export class IncidentService {
         where: { reportId: { in: data.reportIds } },
         data: {
           incidentId: newIncident.incidentId,
-          status: "Assigned",
+          status: ReportStatus.Assigned,
         },
       });
 
@@ -113,10 +114,69 @@ export class IncidentService {
     // Unlink all reports from this incident first
     await prisma.report.updateMany({
       where: { incidentId: id },
-      data: { incidentId: null, status: "Open" },
+      data: { incidentId: null, status: ReportStatus.Open },
     });
     await prisma.task.deleteMany({ where: { incidentId: id } });
     await prisma.incident.delete({ where: { incidentId: id } });
     return { message: "Incident deleted successfully" };
+  }
+
+  static async addReports(incidentId: number, reportIds: number[], userCityId: number) {
+    const incident = await prisma.incident.findUnique({ where: { incidentId } });
+    if (!incident) throw new CustomError("Incident not found", 404);
+    if (userCityId && incident.cityId !== userCityId) {
+      throw new CustomError("You can only modify incidents in your city", 403);
+    }
+
+    const reports = await prisma.report.findMany({
+      where: { reportId: { in: reportIds } },
+    });
+
+    if (reports.length !== reportIds.length) {
+      throw new CustomError("One or more reports were not found", 404);
+    }
+
+    for (const report of reports) {
+      if (report.cityId !== incident.cityId) {
+        throw new CustomError(`Report #${report.reportId} belongs to a different city`, 403);
+      }
+      if (report.incidentId) {
+        throw new CustomError(`Report #${report.reportId} is already assigned to an incident`, 400);
+      }
+    }
+
+    await prisma.report.updateMany({
+      where: { reportId: { in: reportIds } },
+      data: {
+        incidentId: incident.incidentId,
+        status: ReportStatus.Assigned,
+      },
+    });
+
+    return { message: `${reportIds.length} reports added to incident` };
+  }
+
+  static async removeReport(incidentId: number, reportId: number, userCityId: number) {
+    const incident = await prisma.incident.findUnique({ where: { incidentId } });
+    if (!incident) throw new CustomError("Incident not found", 404);
+    if (userCityId && incident.cityId !== userCityId) {
+      throw new CustomError("You can only modify incidents in your city", 403);
+    }
+
+    const report = await prisma.report.findFirst({
+      where: { reportId, incidentId },
+    });
+
+    if (!report) throw new CustomError("Report not found in this incident", 404);
+
+    await prisma.report.update({
+      where: { reportId },
+      data: {
+        incidentId: null,
+        status: ReportStatus.Open,
+      },
+    });
+
+    return { message: "Report removed from incident" };
   }
 }

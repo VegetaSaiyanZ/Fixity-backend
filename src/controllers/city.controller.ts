@@ -20,9 +20,6 @@ export class CityController {
       limit: normalizedLimit,
     });
 
-    return res.status(200).json({
-      message: "Cities fetched successfully",
-      data: result,
-    });
+    return res.status(200).json(result);
   }
 }

@@ -28,9 +28,8 @@ export class ReportService {
       },
       include: {
         category: true,
-        city: true,
         requester: {
-          select: { firstName: true, lastName: true },
+          select: { firstName: true, lastName: true, cityId: true },
         },
       },
     });
@@ -41,9 +40,8 @@ export class ReportService {
       where: { reportId: id },
       include: {
         category: true,
-        city: true,
         requester: {
-          select: { firstName: true, lastName: true },
+          select: { firstName: true, lastName: true, cityId: true },
         },
       },
     });
@@ -58,13 +56,12 @@ export class ReportService {
   static async create(
     userId: number,
     data: CreateReportDTO,
-    userCityId: number,
   ) {
     const newReport = await prisma.report.create({
       data: {
         requesterId: userId,
         categoryId: data.categoryId,
-        cityId: userCityId,
+        cityId: data.cityId,
         description: data.description,
         latitude: data.latitude,
         longitude: data.longitude,

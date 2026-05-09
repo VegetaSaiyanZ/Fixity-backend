@@ -36,12 +36,10 @@ export class ReportController {
 
   static async create(req: AuthRequest, res: Response) {
     const userId = req.user?.userId;
-    const userCityId = req.user!.cityId;
 
     if (!userId) throw new CustomError("Unauthorized", 401);
-    if (!userCityId)
-      throw new CustomError("Pick a city before creating a report", 400);
-    const newReport = await ReportService.create(userId, req.body, userCityId);
+
+    const newReport = await ReportService.create(userId, req.body);
     res
       .status(201)
       .json({ message: "Report created successfully", report: newReport });

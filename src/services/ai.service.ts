@@ -7,6 +7,7 @@ const genAI = new GoogleGenerativeAI(EnvHandler.instance.GEMINI_API_KEY);
 
 export interface AnalyzeImageResult {
   category: string;
+  categoryId: number | null;
   title: string;
   description: string;
 }
@@ -18,22 +19,21 @@ export class AiService {
   ): Promise<AnalyzeImageResult> {
     const base64Data = buffer.toString("base64");
 
-    // Fetch categories from the database
-    let categories: string[] = [];
+    let reportCategories: { reportCategoryId: number; name: string }[] = [];
     try {
-      const dbCategories = await prisma.category.findMany({
-        select: { name: true },
+      reportCategories = await prisma.reportCategory.findMany({
+        select: { reportCategoryId: true, name: true },
       });
-      categories = dbCategories.map((c) => c.name);
     } catch (error) {
       console.error(
-        "Failed to fetch categories from DB, falling back to empty list",
+        "Failed to fetch report categories from DB, falling back to empty list",
         error,
       );
     }
 
-    if (categories.length === 0) {
-      categories = ["Other"]; // Fallback
+    const categoryNames = reportCategories.map((category) => category.name);
+    if (categoryNames.length === 0) {
+      categoryNames.push("Other");
     }
 
     const prompt = `
@@ -45,11 +45,11 @@ Return ONLY a strict JSON object with the following schema:
   "description": "<a detailed description of the incident>"
 }
 
-Allowed categories:
-${categories.map((c) => `- ${c}`).join("\n")}
+Allowed categories (choose EXACTLY one of these names):
+${categoryNames.map((category) => `- ${category}`).join("\n")}
 
-If the image doesn't clearly match a category, use "Other" or the closest match.
-Make sure the JSON is valid.
+If the image doesn't clearly match a category, use the closest match from the list above.
+Make sure the JSON is valid and "category" is exactly one of the allowed strings.
 `;
 
     try {
@@ -70,7 +70,17 @@ Make sure the JSON is valid.
 
       const response = await result.response;
       const text = response.text();
-      return JSON.parse(text) as AnalyzeImageResult;
+      const parsed = JSON.parse(text) as Omit<AnalyzeImageResult, "categoryId">;
+
+      const matched = reportCategories.find(
+        (category) =>
+          category.name.toLowerCase() === parsed.category?.toLowerCase(),
+      );
+
+      return {
+        ...parsed,
+        categoryId: matched?.reportCategoryId ?? null,
+      };
     } catch (error) {
       console.error("Error analyzing image with Gemini:", error);
       throw error;

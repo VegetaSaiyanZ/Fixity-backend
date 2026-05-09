@@ -121,7 +121,7 @@ export class IncidentService {
     return { message: "Incident deleted successfully" };
   }
 
-  static async addReports(incidentId: number, reportIds: number[], userCityId: number | null) {
+  static async addReports(incidentId: number, reportIds: number[], userCityId: number) {
     const incident = await prisma.incident.findUnique({ where: { incidentId } });
     if (!incident) throw new CustomError("Incident not found", 404);
     if (userCityId && incident.cityId !== userCityId) {

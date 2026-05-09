@@ -3,11 +3,7 @@ import { CreateIncidentDTO } from "@/validations/incident.validation";
 import { CustomError } from "@/middleware/error.middleware";
 
 export class IncidentService {
-  static async create(data: CreateIncidentDTO, userCityId: number | null) {
-    if (!userCityId) {
-      throw new CustomError("You must belong to a city to create an incident", 400);
-    }
-
+  static async create(data: CreateIncidentDTO, userCityId: number) {
     // 1. Fetch all reports to validate them
     const reports = await prisma.report.findMany({
       where: {
@@ -24,12 +20,18 @@ export class IncidentService {
 
     for (const report of reports) {
       if (report.cityId !== userCityId) {
-        throw new CustomError(`Report ID ${report.reportId} does not belong to your city`, 403);
+        throw new CustomError(
+          `Report ID ${report.reportId} does not belong to your city`,
+          403,
+        );
       }
       if (report.incidentId) {
-        throw new CustomError(`Report ID ${report.reportId} is already assigned to an incident`, 400);
+        throw new CustomError(
+          `Report ID ${report.reportId} is already assigned to an incident`,
+          400,
+        );
       }
-      
+
       totalLat += Number(report.latitude);
       totalLng += Number(report.longitude);
     }
@@ -42,7 +44,8 @@ export class IncidentService {
       const newIncident = await tx.incident.create({
         data: {
           cityId: userCityId,
-          description: data.description || "Incident automatically generated from reports",
+          description:
+            data.description || "Incident automatically generated from reports",
           latitude: avgLat,
           longitude: avgLng,
         },
@@ -63,9 +66,7 @@ export class IncidentService {
     return incident;
   }
 
-  static async getAllByCity(userCityId: number | null) {
-    if (!userCityId) return [];
-
+  static async getAllByCity(userCityId: number) {
     return await prisma.incident.findMany({
       where: { cityId: userCityId },
       include: {
@@ -76,17 +77,23 @@ export class IncidentService {
               select: { firstName: true, lastName: true },
             },
             category: true,
-          }
+          },
         },
       },
       orderBy: { createdAt: "desc" },
     });
   }
 
-  static async update(id: number, userCityId: number | null, data: { description?: string }) {
-    const incident = await prisma.incident.findUnique({ where: { incidentId: id } });
+  static async update(
+    id: number,
+    userCityId: number,
+    data: { description?: string },
+  ) {
+    const incident = await prisma.incident.findUnique({
+      where: { incidentId: id },
+    });
     if (!incident) throw new CustomError("Incident not found", 404);
-    if (userCityId && incident.cityId !== userCityId) {
+    if (incident.cityId !== userCityId) {
       throw new CustomError("You can only edit incidents in your city", 403);
     }
     return await prisma.incident.update({
@@ -95,10 +102,12 @@ export class IncidentService {
     });
   }
 
-  static async delete(id: number, userCityId: number | null) {
-    const incident = await prisma.incident.findUnique({ where: { incidentId: id } });
+  static async delete(id: number, userCityId: number) {
+    const incident = await prisma.incident.findUnique({
+      where: { incidentId: id },
+    });
     if (!incident) throw new CustomError("Incident not found", 404);
-    if (userCityId && incident.cityId !== userCityId) {
+    if (incident.cityId !== userCityId) {
       throw new CustomError("You can only delete incidents in your city", 403);
     }
     // Unlink all reports from this incident first

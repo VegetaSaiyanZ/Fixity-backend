@@ -40,6 +40,7 @@ export class AuthService {
         role: UserRole.Citizen,
         cityId,
       },
+      include: { city: true },
     });
 
     const { token, refreshToken } = AuthUtils.generateTokens({
@@ -50,7 +51,12 @@ export class AuthService {
       data: { userId: user.userId, refreshToken },
     });
 
-    return { token, refreshToken, user };
+    const { city: userCity, ...userWithoutCity } = user;
+    return {
+      token,
+      refreshToken,
+      user: { ...userWithoutCity, cityName: userCity?.name },
+    };
   }
 
   static async signin(data: SigninDTO) {
@@ -58,6 +64,7 @@ export class AuthService {
 
     const user = await prisma.user.findUnique({
       where: { email },
+      include: { city: true },
     });
 
     if (!user) {
@@ -81,7 +88,12 @@ export class AuthService {
       data: { userId: user.userId, refreshToken },
     });
 
-    return { token, refreshToken, user };
+    const { city, ...userWithoutCity } = user;
+    return {
+      token,
+      refreshToken,
+      user: { ...userWithoutCity, cityName: city?.name },
+    };
   }
 
   static async refresh(data: RefreshDTO) {

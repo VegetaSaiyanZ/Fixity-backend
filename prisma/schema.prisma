@@ -98,6 +98,7 @@ model Incident {
   longitude     Decimal   @db.Decimal(11, 8)
   priorityScore Decimal?  @default(0.00) @map("priority_score") @db.Decimal(5, 2)
   status        ReportStatus @default(Open)
+  baseSeverity  Int          @default(1) @map("base_severity")
   createdAt     DateTime  @default(now()) @map("created_at")
   resolvedAt    DateTime? @map("resolved_at")
 

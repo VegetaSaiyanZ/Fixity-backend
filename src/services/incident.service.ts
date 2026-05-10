@@ -1,7 +1,9 @@
 import prisma from "@/prisma/client";
-import { ReportStatus } from "@prisma/client";
 import { CreateIncidentDTO } from "@/validations/incident.validation";
 import { CustomError } from "@/middleware/error.middleware";
+import { AiService } from "@/services/ai.service";
+import { ReportStatus } from "@prisma/client";
+import { PriorityUtils } from "@/utils/priority.util";
 
 export class IncidentService {
   static async create(data: CreateIncidentDTO, userCityId: number) {
@@ -40,7 +42,15 @@ export class IncidentService {
     const avgLat = totalLat / reports.length;
     const avgLng = totalLng / reports.length;
 
-    // 2. Create the Incident
+    // 2. Determine Severity and Priority
+    const descriptionForAi = data.description || reports[0].description;
+    const baseSeverity = await AiService.getSeverity(descriptionForAi);
+
+    // Initial score = (Severity * 10) + (Total Supports * 5)
+    const totalSupports = reports.reduce((sum, r) => sum + (r.supportCount || 0), 0);
+    const initialPriorityScore = (baseSeverity * 10) + (totalSupports * 5);
+
+    // 3. Create the Incident
     const incident = await prisma.$transaction(async (tx) => {
       const newIncident = await tx.incident.create({
         data: {
@@ -49,10 +59,12 @@ export class IncidentService {
             data.description || "Incident automatically generated from reports",
           latitude: avgLat,
           longitude: avgLng,
+          baseSeverity,
+          priorityScore: initialPriorityScore,
         },
       });
 
-      // 3. Link reports to this incident and set status to Assigned
+      // 4. Link reports to this incident and set status to Assigned
       await tx.report.updateMany({
         where: { reportId: { in: data.reportIds } },
         data: {
@@ -68,7 +80,7 @@ export class IncidentService {
   }
 
   static async getAllByCity(userCityId: number) {
-    return await prisma.incident.findMany({
+    const incidents = await prisma.incident.findMany({
       where: { cityId: userCityId },
       include: {
         reports: true,
@@ -81,8 +93,17 @@ export class IncidentService {
           },
         },
       },
-      orderBy: { createdAt: "desc" },
     });
+
+    return incidents
+      .map((incident) => ({
+        ...incident,
+        priorityScore: PriorityUtils.getDynamicScore(
+          incident.priorityScore ? Number(incident.priorityScore) : 0,
+          incident.createdAt,
+        ),
+      }))
+      .sort((a, b) => (b.priorityScore as number) - (a.priorityScore as number));
   }
 
   static async update(

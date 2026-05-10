@@ -44,5 +44,6 @@ router.patch(
   asyncHandler(ReportController.update),
 );
 router.delete("/:id", authenticate(), asyncHandler(ReportController.delete));
+router.post("/:id/support", authenticate(), asyncHandler(ReportController.supportReport));
 
 export default router;

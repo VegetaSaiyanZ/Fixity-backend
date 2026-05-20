@@ -7,6 +7,7 @@ export const UpdateUserSchema = z.object({
     .object({
       firstName: z.string().min(1, "First name cannot be empty").optional(),
       lastName: z.string().min(1, "Last name cannot be empty").optional(),
+      email: z.string().email("Invalid email format").optional(),
       cityId: z.number().int().positive("Invalid city ID").optional(),
       profilePictureUrl: z.string().url().or(z.string().nullable()).optional(),
     })

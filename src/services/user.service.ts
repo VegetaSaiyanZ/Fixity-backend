@@ -35,6 +35,15 @@ export class UserService {
   }
 
   static async updateMe(userId: number, data: UpdateUserDTO) {
+    if (data.email) {
+      const existingEmail = await prisma.user.findUnique({
+        where: { email: data.email },
+      });
+      if (existingEmail && existingEmail.userId !== userId) {
+        throw new CustomError("Email already in use", 409);
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { userId },
       data,

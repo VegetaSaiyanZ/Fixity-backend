@@ -39,3 +39,22 @@ export const uploadReportImage = multer({
     fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 });
+
+const profileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'profile_img-' + uniqueSuffix + ext);
+  }
+});
+
+export const uploadProfileImage = multer({
+  storage: profileStorage,
+  fileFilter,
+  limits: {
+    fileSize: 2 * 1024 * 1024 // 2MB limit
+  }
+});

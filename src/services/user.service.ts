@@ -13,7 +13,13 @@ export class UserService {
         email: true,
         role: true,
         cityId: true,
+        profilePictureUrl: true,
         createdAt: true,
+        city: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
 
@@ -21,7 +27,11 @@ export class UserService {
       throw new CustomError("User not found", 404);
     }
 
-    return user;
+    const { city, ...userWithoutCity } = user;
+    return {
+      ...userWithoutCity,
+      cityName: city?.name || null,
+    };
   }
 
   static async updateMe(userId: number, data: UpdateUserDTO) {
@@ -35,10 +45,20 @@ export class UserService {
         email: true,
         role: true,
         cityId: true,
+        profilePictureUrl: true,
         createdAt: true,
+        city: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
 
-    return updatedUser;
+    const { city, ...userWithoutCity } = updatedUser;
+    return {
+      ...userWithoutCity,
+      cityName: city?.name || null,
+    };
   }
 }

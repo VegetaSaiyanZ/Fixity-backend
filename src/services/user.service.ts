@@ -13,7 +13,13 @@ export class UserService {
         email: true,
         role: true,
         cityId: true,
+        profilePictureUrl: true,
         createdAt: true,
+        city: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
 
@@ -21,10 +27,23 @@ export class UserService {
       throw new CustomError("User not found", 404);
     }
 
-    return user;
+    const { city, ...userWithoutCity } = user;
+    return {
+      ...userWithoutCity,
+      cityName: city?.name || null,
+    };
   }
 
   static async updateMe(userId: number, data: UpdateUserDTO) {
+    if (data.email) {
+      const existingEmail = await prisma.user.findUnique({
+        where: { email: data.email },
+      });
+      if (existingEmail && existingEmail.userId !== userId) {
+        throw new CustomError("Email already in use", 409);
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { userId },
       data,
@@ -35,10 +54,20 @@ export class UserService {
         email: true,
         role: true,
         cityId: true,
+        profilePictureUrl: true,
         createdAt: true,
+        city: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
 
-    return updatedUser;
+    const { city, ...userWithoutCity } = updatedUser;
+    return {
+      ...userWithoutCity,
+      cityName: city?.name || null,
+    };
   }
 }

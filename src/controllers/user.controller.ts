@@ -26,4 +26,23 @@ export class UserController {
       user: updatedUser,
     });
   }
+
+  static async uploadAvatar(req: AuthRequest, res: Response) {
+    const userId = req.user?.userId;
+    if (!userId) {
+      throw new CustomError("Unauthorized", 401);
+    }
+
+    if (!req.file) {
+      throw new CustomError("No avatar image uploaded", 400);
+    }
+
+    const profilePictureUrl = `/uploads/${req.file.filename}`;
+    const updatedUser = await UserService.updateMe(userId, { profilePictureUrl });
+
+    res.status(200).json({
+      message: "Avatar uploaded successfully",
+      user: updatedUser,
+    });
+  }
 }

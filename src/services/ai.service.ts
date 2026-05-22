@@ -140,4 +140,52 @@ ${description}
       return 1; // Default to 1 on error
     }
   }
+
+  static async generateMayorInsights(
+    statsText: string,
+  ): Promise<{ insight: string; action_type: string }> {
+    const prompt = `
+You are an expert city planner and data analyst advising the Mayor. Based on the following aggregated statistics of city reports, analyze and detect any critical issues, spikes in specific categories, or geographic clusters.
+Provide a concise, professional, executive-level insight string for the Mayor's dashboard. Do not include markdown formatting in the insight.
+Also recommend exactly one of the following action types based on the insight:
+- 'DEPLOY_WORKERS' (e.g. for potholes, plumbing, cleanup spikes)
+- 'INVESTIGATE_INFRASTRUCTURE' (e.g. for electrical, safety hazards, large infrastructure issues)
+- 'PUBLIC_ALERT' (e.g. for widespread safety hazards or major emergencies)
+- 'RESOLVE_URGENT' (e.g. for specific urgent safety/critical hazards)
+- 'MONITOR' (e.g. if everything is normal or low activity)
+
+Statistics:
+${statsText}
+
+Return ONLY a strict JSON object with the following schema:
+{
+  "insight": "<generated insight string>",
+  "action_type": "<one of the action types listed above>"
 }
+`;
+
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" },
+      });
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      const parsed = JSON.parse(text);
+
+      return {
+        insight: parsed.insight || "No critical issues detected.",
+        action_type: parsed.action_type || "MONITOR",
+      };
+    } catch (error) {
+      console.error("Error generating mayor insights with Gemini:", error);
+      return {
+        insight: "Unable to generate insights at this time due to service error.",
+        action_type: "MONITOR",
+      };
+    }
+  }
+}
+

@@ -10,12 +10,12 @@ export const validate = (schema: ZodSchema) => {
         body: req.body,
         query: req.query,
         params: req.params,
-      });
-      
+      }) as any;
+
       if (parsed.body) req.body = parsed.body;
       if (parsed.query) req.query = parsed.query;
       if (parsed.params) req.params = parsed.params;
-      
+
       next();
     } catch (error) {
       if (error instanceof ZodError) {

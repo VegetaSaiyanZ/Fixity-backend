@@ -7,6 +7,7 @@ import taskRoutes from "@/routes/task.routes";
 import cityRoutes from "./city.routes";
 import incidentRoutes from "@/routes/incident.routes";
 import categoryRoutes from "@/routes/category.routes";
+import mayorRoutes from "@/routes/mayor.routes";
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use("/tasks", taskRoutes);
 router.use("/cities", cityRoutes);
 router.use("/incidents", incidentRoutes);
 router.use("/categories", categoryRoutes);
+router.use("/mayor", mayorRoutes);
 
 export default router;

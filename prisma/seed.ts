@@ -67,6 +67,10 @@ async function main() {
     data: { email: "manager@fixity.com", firstName: "Alice", lastName: "Manager", passwordHash, role: UserRole.Manager, cityId: city!.cityId },
   });
 
+  const mayor = await prisma.user.create({
+    data: { email: "mayor@fixity.com", firstName: "Mayor", lastName: "Mayor", passwordHash, role: UserRole.Official, cityId: city!.cityId },
+  });
+
   console.log("Seeding reports and prioritized incidents...");
   const repCat = await prisma.reportCategory.findFirst();
   const taskCat = await prisma.category.findFirst();

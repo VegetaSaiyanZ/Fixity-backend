@@ -37,13 +37,13 @@ export class AiService {
     }
 
     const prompt = `
-You are an expert Smart City incident analyzer. Analyze this image and extract details for a public report.
-Return ONLY a strict JSON object with the following schema:
-{
-  "category": "<one of the predefined categories>",
-  "title": "<a short, descriptive title>",
-  "description": "<a detailed description of the incident>"
-}
+    You are an expert Smart City incident analyzer. Analyze this image and extract concise details for a public report.
+    Return ONLY a strict JSON object with the following schema:
+    {
+      "category": "<one of the predefined categories>",
+      "title": "<a short, descriptive title>",
+      "description": "<a brief incident description>"
+    }
 
 Allowed categories (choose EXACTLY one of these names):
 ${categoryNames.map((category) => `- ${category}`).join("\n")}

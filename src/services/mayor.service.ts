@@ -1,48 +1,29 @@
 import prisma from "@/prisma/client";
 import { AiService } from "@/services/ai.service";
 
-function getSlaDays(baseSeverity: number | null | undefined): number {
-  if (baseSeverity === null || baseSeverity === undefined) return 5;
-  if (baseSeverity >= 7) return 1;
-  if (baseSeverity >= 4) return 3;
-  return 7;
-}
+import {
+  getSlaDays,
+  getReportSatisfactionScore,
+  formatPercentDelta,
+  averageResolutionTime,
+  haversineDistance,
+  MS_PER_DAY,
+  SEVEN_DAYS_MS,
+  FOURTEEN_DAYS_MS,
+  DIST_THRESHOLD_KM,
+} from '@/utils/mayorUtils';
 
-function getReportSatisfactionScore(
-  createdAt: Date,
-  resolvedAt: Date | null,
-  status: string,
-  now: Date
-): number {
-  if (status === "Closed" && resolvedAt) {
-    const resTimeDays = (resolvedAt.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-    if (resTimeDays <= 2) return 95;
-    if (resTimeDays <= 5) return 80;
-    if (resTimeDays <= 10) return 65;
-    return 45;
-  } else {
-    const ageDays = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-    if (ageDays <= 2) return 85;
-    if (ageDays <= 5) return 70;
-    if (ageDays <= 10) return 55;
-    return 30;
-  }
-}
+// Time constants
 
-function formatPercentDelta(current: number, previous: number): string {
-  if (previous === 0) {
-    if (current === 0) return "+0%";
-    return `+${(current * 100).toFixed(0)}%`;
-  }
-  const pct = ((current - previous) / previous) * 100;
-  return (pct >= 0 ? "+" : "") + pct.toFixed(1) + "%";
-}
 
 export class MayorService {
+
+
+
   static async getStats(cityId: number) {
     const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - SEVEN_DAYS_MS);
+    const fourteenDaysAgo = new Date(now.getTime() - FOURTEEN_DAYS_MS);
 
     // 1. Total Open Reports
     const currentOpenReports = await prisma.report.count({
@@ -106,19 +87,10 @@ export class MayorService {
       }
     });
 
-    const getAverageResolutionTime = (reports: any[]): number => {
-      if (reports.length === 0) return 0;
-      const sum = reports.reduce((acc, r) => {
-        const resolvedAt = r.incident?.resolvedAt;
-        if (!resolvedAt) return acc;
-        const diff = resolvedAt.getTime() - r.createdAt.getTime();
-        return acc + diff;
-      }, 0);
-      return sum / reports.length / (1000 * 60 * 60 * 24); // in days
-    };
 
-    const currentAvgResTime = getAverageResolutionTime(currentResolvedReports);
-    const previousAvgResTime = getAverageResolutionTime(previousResolvedReports);
+
+    const currentAvgResTime = averageResolutionTime(currentResolvedReports);
+    const previousAvgResTime = averageResolutionTime(previousResolvedReports);
     const resTimeDelta = currentAvgResTime - previousAvgResTime;
     const resTimeDeltaStr = (resTimeDelta >= 0 ? "+" : "") + resTimeDelta.toFixed(1) + "d";
 
@@ -194,8 +166,8 @@ export class MayorService {
 
   static async getAiInsights(cityId: number) {
     const now = new Date();
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - SEVEN_DAYS_MS);
+    const fourteenDaysAgo = new Date(now.getTime() - FOURTEEN_DAYS_MS);
 
     // Fetch total active reports count
     const currentOpenReports = await prisma.report.count({
@@ -290,7 +262,7 @@ Previous Reports created (7-14 days ago): ${previousReports.length}
 
     const alerts = activeReports.map(report => {
       const createdAt = report.createdAt;
-      const ageDays = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+      const ageDays = (now.getTime() - createdAt.getTime()) / MS_PER_DAY;
       const severity = report.incident?.baseSeverity ?? null;
       const slaDays = getSlaDays(severity);
       const isUrgent = (severity !== null && severity >= 7) || (report.supportCount !== null && report.supportCount >= 5);
@@ -336,7 +308,7 @@ Previous Reports created (7-14 days ago): ${previousReports.length}
     }
 
     const clusters: Cluster[] = [];
-    const distThreshold = 0.003; // ~300 meters
+
 
     for (const report of reports) {
       const lat = Number(report.latitude);
@@ -345,8 +317,8 @@ Previous Reports created (7-14 days ago): ${previousReports.length}
 
       let addedToCluster = false;
       for (const cluster of clusters) {
-        const dist = Math.sqrt(Math.pow(lat - cluster.lat, 2) + Math.pow(lng - cluster.lng, 2));
-        if (dist < distThreshold) {
+        const dist = haversineDistance(lat, lng, cluster.lat, cluster.lng);
+        if (dist < DIST_THRESHOLD_KM) {
           cluster.reports.push({ lat, lng, severity });
           cluster.lat = cluster.reports.reduce((sum, r) => sum + r.lat, 0) / cluster.reports.length;
           cluster.lng = cluster.reports.reduce((sum, r) => sum + r.lng, 0) / cluster.reports.length;

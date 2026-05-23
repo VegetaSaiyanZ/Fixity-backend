@@ -1,10 +1,21 @@
-import { Report } from '@prisma/client';
+// Report status constants
+export const ReportStatus = {
+  OPEN: "Open",
+  IN_PROGRESS: "InProgress",
+  CLOSED: "Closed",
+} as const;
 
 // Time constants
 export const MS_PER_DAY = 1000 * 60 * 60 * 24;
-export const ONE_DAY_MS = MS_PER_DAY;
-export const SEVEN_DAYS_MS = 7 * ONE_DAY_MS;
-export const FOURTEEN_DAYS_MS = 14 * ONE_DAY_MS;
+export const SEVEN_DAYS_MS = 7 * MS_PER_DAY;
+export const FOURTEEN_DAYS_MS = 14 * MS_PER_DAY;
+
+// Minimal type for reports that include the joined incident relation
+export type ReportWithIncident = {
+  createdAt: Date;
+  status: string;
+  incident: { resolvedAt: Date | null } | null;
+};
 
 // Distance constant (kilometers) for clustering (~300 m)
 export const DIST_THRESHOLD_KM = 0.3;
@@ -32,12 +43,6 @@ export const SATISFACTION_OPEN = [
   { maxDays: Infinity, score: 30 },
 ];
 
-
-export function calculatePercentDelta(current: number, previous: number): string {
-  if (previous === 0) return current > 0 ? "+100%" : "0%";
-  const delta = ((current - previous) / previous) * 100;
-  return `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%`;
-}
 
 /**
  * Returns SLA days based on base severity.
@@ -78,21 +83,25 @@ export function getReportSatisfactionScore(
 export function formatPercentDelta(current: number, previous: number): string {
   if (previous === 0) {
     if (current === 0) return "+0%";
-    return `+${(current * 100).toFixed(0)}%`;
+    // No previous baseline — signal as a new appearance rather than an infinite %
+    return "+100%";
   }
   const pct = ((current - previous) / previous) * 100;
   return (pct >= 0 ? "+" : "") + pct.toFixed(1) + "%";
 }
 
-/** Calculates average resolution time (days) from a list of reports. */
-export function averageResolutionTime(reports: Report[]): number {
+/** Calculates average resolution time (days) from a list of reports with their incident relation. */
+export function averageResolutionTime(reports: ReportWithIncident[]): number {
   if (reports.length === 0) return 0;
+  let resolvedCount = 0;
   const sumMs = reports.reduce((acc, r) => {
     const resolvedAt = r.incident?.resolvedAt;
     if (!resolvedAt) return acc;
+    resolvedCount++;
     return acc + (resolvedAt.getTime() - r.createdAt.getTime());
   }, 0);
-  return sumMs / reports.length / MS_PER_DAY;
+  // Divide only by reports that were actually resolved to avoid diluting the average
+  return resolvedCount === 0 ? 0 : sumMs / resolvedCount / MS_PER_DAY;
 }
 
 /** Haversine distance in kilometers between two lat/lng points. */

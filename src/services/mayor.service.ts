@@ -11,10 +11,17 @@ import {
   SEVEN_DAYS_MS,
   FOURTEEN_DAYS_MS,
   DIST_THRESHOLD_KM,
+  ReportWithIncident,
 } from '@/utils/mayorUtils';
 
-// Time constants
-
+// Internal type for clustering geo-points
+interface GeoCluster {
+  lat: number;
+  lng: number;
+  density: number;
+  severityScoreSum: number;
+  points: { lat: number; lng: number; severity: number }[];
+}
 
 export class MayorService {
 
@@ -25,7 +32,7 @@ export class MayorService {
     const sevenDaysAgo = new Date(now.getTime() - SEVEN_DAYS_MS);
     const fourteenDaysAgo = new Date(now.getTime() - FOURTEEN_DAYS_MS);
 
-    // 1. Total Open Reports
+    // 1. Total Open Reports (current vs. 7 days ago snapshot)
     const currentOpenReports = await prisma.report.count({
       where: {
         cityId,
@@ -49,6 +56,44 @@ export class MayorService {
     });
 
     const openReportsDeltaStr = formatPercentDelta(currentOpenReports, openReportsSevenDaysAgo);
+
+    // 2. Total Closed Reports (current vs. previous 7-day window)
+    const currentClosedReports = await prisma.report.count({
+      where: {
+        cityId,
+        status: "Closed",
+      },
+    });
+
+    // Count reports that were closed in the 7-14 day window (previous period)
+    const previousClosedReports = await prisma.report.count({
+      where: {
+        cityId,
+        status: "Closed",
+        incident: {
+          resolvedAt: {
+            gte: fourteenDaysAgo,
+            lt: sevenDaysAgo,
+          },
+        },
+      },
+    });
+
+    // Count reports closed in the last 7 days (current period) for delta calculation
+    const recentClosedReports = await prisma.report.count({
+      where: {
+        cityId,
+        status: "Closed",
+        incident: {
+          resolvedAt: {
+            gte: sevenDaysAgo,
+            lte: now,
+          },
+        },
+      },
+    });
+
+    const closedReportsDeltaStr = formatPercentDelta(recentClosedReports, previousClosedReports);
 
     // 2. Average Resolution Time
     const currentResolvedReports = await prisma.report.findMany({
@@ -135,10 +180,15 @@ export class MayorService {
       }
     });
 
-    const calculateSatisfaction = (reports: any[], referenceDate: Date): number => {
-      if (reports.length === 0) return 85.0; // default satisfaction
+    const calculateSatisfaction = (reports: ReportWithIncident[], referenceDate: Date): number => {
+      if (reports.length === 0) return 85.0; // default satisfaction when no data
       const sum = reports.reduce((acc, r) => {
-        return acc + getReportSatisfactionScore(r.createdAt, r.incident?.resolvedAt, r.status, referenceDate);
+        return acc + getReportSatisfactionScore(
+          r.createdAt,
+          r.incident?.resolvedAt ?? null,
+          (r as any).status,
+          referenceDate,
+        );
       }, 0);
       return sum / reports.length;
     };
@@ -152,6 +202,10 @@ export class MayorService {
       openReports: {
         value: currentOpenReports,
         delta: openReportsDeltaStr,
+      },
+      closedReports: {
+        value: currentClosedReports,
+        delta: closedReportsDeltaStr,
       },
       resolutionTime: {
         value: Number(currentAvgResTime.toFixed(1)),
@@ -295,34 +349,29 @@ Previous Reports created (7-14 days ago): ${previousReports.length}
         status: { not: "Closed" },
       },
       include: {
-        incident: true,
+        incident: { select: { baseSeverity: true } },
       },
     });
 
-    interface Cluster {
-      lat: number;
-      lng: number;
-      density: number;
-      severityScoreSum: number;
-      reports: { lat: number; lng: number; severity: number }[];
-    }
-
-    const clusters: Cluster[] = [];
-
+    const clusters: GeoCluster[] = [];
 
     for (const report of reports) {
       const lat = Number(report.latitude);
       const lng = Number(report.longitude);
+
+      // Skip reports with missing or invalid coordinates
+      if (isNaN(lat) || isNaN(lng)) continue;
+
       const severity = report.incident?.baseSeverity ?? 3;
 
       let addedToCluster = false;
       for (const cluster of clusters) {
         const dist = haversineDistance(lat, lng, cluster.lat, cluster.lng);
         if (dist < DIST_THRESHOLD_KM) {
-          cluster.reports.push({ lat, lng, severity });
-          cluster.lat = cluster.reports.reduce((sum, r) => sum + r.lat, 0) / cluster.reports.length;
-          cluster.lng = cluster.reports.reduce((sum, r) => sum + r.lng, 0) / cluster.reports.length;
-          cluster.density = cluster.reports.length;
+          cluster.points.push({ lat, lng, severity });
+          cluster.lat = cluster.points.reduce((sum, p) => sum + p.lat, 0) / cluster.points.length;
+          cluster.lng = cluster.points.reduce((sum, p) => sum + p.lng, 0) / cluster.points.length;
+          cluster.density = cluster.points.length;
           cluster.severityScoreSum += severity;
           addedToCluster = true;
           break;
@@ -335,14 +384,14 @@ Previous Reports created (7-14 days ago): ${previousReports.length}
           lng,
           density: 1,
           severityScoreSum: severity,
-          reports: [{ lat, lng, severity }],
+          points: [{ lat, lng, severity }],
         });
       }
     }
 
     return clusters.map(c => {
       const avgSeverity = c.severityScoreSum / c.density;
-      let severityLevel: "Low" | "Medium" | "High" | "Critical" = "Medium";
+      let severityLevel: "Low" | "Medium" | "High" | "Critical";
       if (avgSeverity < 3) severityLevel = "Low";
       else if (avgSeverity < 6) severityLevel = "Medium";
       else if (avgSeverity < 8) severityLevel = "High";

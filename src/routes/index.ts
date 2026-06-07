@@ -8,6 +8,7 @@ import cityRoutes from "./city.routes";
 import incidentRoutes from "@/routes/incident.routes";
 import categoryRoutes from "@/routes/category.routes";
 import mayorRoutes from "@/routes/mayor.routes";
+import staffRoutes from "@/routes/staff.routes";
 
 const router = Router();
 
@@ -21,5 +22,6 @@ router.use("/cities", cityRoutes);
 router.use("/incidents", incidentRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/mayor", mayorRoutes);
+router.use("/staff", staffRoutes);
 
 export default router;

@@ -93,4 +93,47 @@ export class StaffController {
       user: newStaff,
     });
   }
+
+  static async deleteStaff(req: AuthRequest, res: Response) {
+    const creatorRole = req.user?.role;
+    const cityId = req.user?.cityId;
+    const callerUserId = req.user?.userId;
+
+    if (!cityId) {
+      throw new CustomError("User does not have an assigned city", 400);
+    }
+
+    const targetId = Number(req.params.userId);
+
+    if (targetId === callerUserId) {
+      throw new CustomError("You cannot delete your own account", 403);
+    }
+
+    // Find the target user
+    const targetUser = await prisma.user.findUnique({
+      where: { userId: targetId },
+    });
+
+    if (!targetUser || targetUser.cityId !== cityId) {
+      throw new CustomError("Staff member not found", 404);
+    }
+
+    // Permission checks
+    if (targetUser.role === UserRole.Official) {
+      throw new CustomError("Cannot delete an Official account", 403);
+    }
+    if (
+      creatorRole === UserRole.Manager &&
+      targetUser.role !== UserRole.Worker
+    ) {
+      throw new CustomError("Managers can only delete Worker accounts", 403);
+    }
+
+    // Delete the user
+    await prisma.user.delete({
+      where: { userId: targetId },
+    });
+
+    res.status(200).json({ message: "Staff account deleted successfully" });
+  }
 }

@@ -49,7 +49,7 @@ async function main() {
 
   console.log("Seeding users...");
   const city = await prisma.city.findFirst({ where: { name: "Tel Aviv" } });
-  const passwordHash = await bcrypt.hash("password123", 10);
+  const passwordHash = await bcrypt.hash("123123", 10);
 
   const citizen = await prisma.user.create({
     data: { email: "citizen@fixity.com", firstName: "John", lastName: "Citizen", passwordHash, role: UserRole.Citizen, cityId: city!.cityId },

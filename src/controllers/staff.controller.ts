@@ -46,10 +46,14 @@ export class StaffController {
     }
 
     const { firstName, lastName, email, role } = req.body as CreateStaffDTO;
-    
-    if (creatorRole === UserRole.Official && role !== UserRole.Manager) {
-      throw new CustomError("Officials can only create Manager accounts", 403);
-    } else if (creatorRole === UserRole.Manager && role !== UserRole.Worker) {
+
+    if ((role as UserRole) === UserRole.Official) {
+      throw new CustomError(
+        "Cannot create accounts with the Official role",
+        403,
+      );
+    }
+    if (creatorRole === UserRole.Manager && role !== UserRole.Worker) {
       throw new CustomError("Managers can only create Worker accounts", 403);
     }
 

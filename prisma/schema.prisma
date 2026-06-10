@@ -59,6 +59,7 @@ model User {
   cityId            Int      @map("city_id")
   profilePictureUrl String?  @map("profile_picture_url") @db.VarChar(255)
   createdAt         DateTime @default(now()) @map("created_at")
+  deletedAt         DateTime? @map("deleted_at")
 
   city          City           @relation(fields: [cityId], references: [cityId])
   refreshTokens RefreshToken[]

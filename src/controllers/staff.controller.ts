@@ -19,6 +19,7 @@ export class StaffController {
       where: {
         cityId,
         role,
+        deletedAt: null,
       },
       select: {
         userId: true,
@@ -114,7 +115,7 @@ export class StaffController {
       where: { userId: targetId },
     });
 
-    if (!targetUser || targetUser.cityId !== cityId) {
+    if (!targetUser || targetUser.deletedAt !== null || targetUser.cityId !== cityId) {
       throw new CustomError("Staff member not found", 404);
     }
 
@@ -129,11 +130,29 @@ export class StaffController {
       throw new CustomError("Managers can only delete Worker accounts", 403);
     }
 
-    // Delete the user
-    await prisma.user.delete({
-      where: { userId: targetId },
+    // Use a transaction to unassign active tasks and soft delete user
+    await prisma.$transaction(async (tx) => {
+      // Unassign Active Tasks: Find tasks where assignedWorkerId is the target user and status is NOT 'Closed'
+      await tx.task.updateMany({
+        where: {
+          assignedWorkerId: targetId,
+          status: { not: "Closed" },
+        },
+        data: {
+          assignedWorkerId: null,
+          status: "Open"
+        },
+      });
+
+      // Soft Delete User
+      await tx.user.update({
+        where: { userId: targetId },
+        data: {
+          deletedAt: new Date(),
+        },
+      });
     });
 
-    res.status(200).json({ message: "Staff account deleted successfully" });
+    res.status(200).json({ message: "Staff account deactivated and tasks unassigned." });
   }
 }

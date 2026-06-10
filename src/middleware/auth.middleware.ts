@@ -21,10 +21,10 @@ export const authenticate = (allowedRoles?: UserRole[]) => {
       const tokenContent = AuthUtils.verifyToken(token);
       const user = await prisma.user.findUnique({
         where: { userId: parseInt(tokenContent.userId) },
-        select: { userId: true, role: true, cityId: true },
+        select: { userId: true, role: true, cityId: true, deletedAt: true },
       });
 
-      if (!user) {
+      if (!user || user.deletedAt !== null) {
         return res.status(401).json({ message: "User not found" });
       }
 

@@ -36,7 +36,26 @@ export class MayorController {
     if (!cityId) {
       throw new CustomError("User does not have an assigned city", 400);
     }
-    const density = await MayorService.getMapDensity(cityId);
+    const category = req.query.category as string | undefined;
+    const density = await MayorService.getMapDensity(cityId, category);
     res.status(200).json(density);
+  }
+
+  static async getDepartments(req: AuthRequest, res: Response) {
+    const cityId = req.user?.cityId;
+    if (!cityId) {
+      throw new CustomError("User does not have an assigned city", 400);
+    }
+    const departments = await MayorService.getDepartments(cityId);
+    res.status(200).json(departments);
+  }
+
+  static async getPulse(req: AuthRequest, res: Response) {
+    const cityId = req.user?.cityId;
+    if (!cityId) {
+      throw new CustomError("User does not have an assigned city", 400);
+    }
+    const pulse = await MayorService.getPulse(cityId);
+    res.status(200).json(pulse);
   }
 }

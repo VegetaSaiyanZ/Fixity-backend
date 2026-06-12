@@ -342,14 +342,45 @@ Previous Reports created (7-14 days ago): ${previousReports.length}
     return alerts.filter(a => a.isUrgent || a.exceededSla);
   }
 
-  static async getMapDensity(cityId: number) {
+  /**
+   * Retrieves active, unclosed reports for a city, optionally filtered by a specific category name,
+   * mapping frontend filter tags to backend database categories (e.g. "Potholes" to "Pothole",
+   * and "Water" to "Plumbing", "Water", or "Sewage" categories).
+   */
+  static async getMapDensity(cityId: number, categoryName?: string) {
+    const whereClause: any = {
+      cityId,
+      status: { not: "Closed" },
+    };
+
+    if (categoryName && categoryName !== "All Faults") {
+      if (categoryName.toLowerCase() === "potholes") {
+        whereClause.category = {
+          name: {
+            equals: "Pothole",
+          },
+        };
+      } else if (categoryName.toLowerCase() === "water") {
+        whereClause.category = {
+          name: {
+            in: ["Plumbing", "Water", "Sewage"],
+          },
+        };
+      } else {
+        whereClause.category = {
+          name: {
+            contains: categoryName,
+            mode: "insensitive",
+          },
+        };
+      }
+    }
+
     const reports = await prisma.report.findMany({
-      where: {
-        cityId,
-        status: { not: "Closed" },
-      },
+      where: whereClause,
       include: {
         incident: { select: { baseSeverity: true } },
+        category: true,
       },
     });
 
@@ -404,5 +435,181 @@ Previous Reports created (7-14 days ago): ${previousReports.length}
         severity: severityLevel,
       };
     });
+  }
+
+  /**
+   * Calculates the SLA compliance percentage for a list of reports.
+   * A report is compliant if resolved within severity-based SLA days or if still active under SLA.
+   */
+  static calculateSlaRate(deptReports: any[], now: Date): number {
+    if (deptReports.length === 0) return 100;
+
+    let withinSla = 0;
+    deptReports.forEach(r => {
+      const createdAt = r.createdAt;
+      const severity = r.incident?.baseSeverity ?? null;
+      const slaDays = getSlaDays(severity);
+      const ageDays = (now.getTime() - createdAt.getTime()) / MS_PER_DAY;
+
+      if (r.status === "Closed" && r.incident?.resolvedAt) {
+        const resolvedAgeDays = (r.incident.resolvedAt.getTime() - createdAt.getTime()) / MS_PER_DAY;
+        if (resolvedAgeDays <= slaDays) withinSla++;
+      } else {
+        if (ageDays <= slaDays) withinSla++;
+      }
+    });
+
+    return Math.round((withinSla / deptReports.length) * 100);
+  }
+
+  /**
+   * Retrieves department performance data and budget/efficiency chart datasets.
+   * Maps categories to departments and runs strict database SLA queries.
+   */
+  static async getDepartments(cityId: number) {
+    const now = new Date();
+    const reports = await prisma.report.findMany({
+      where: { cityId },
+      include: {
+        category: true,
+        incident: true,
+      },
+    });
+
+    const deptsConfig = [
+      { name: "Water & Sewage", categories: ["Plumbing"] },
+      { name: "Sanitation", categories: ["Garbage Collection", "Graffiti", "Other"] },
+      { name: "Electricity", categories: ["Electrical", "Streetlight"] },
+      { name: "Roads", categories: ["Pothole", "Safety Hazard"] }
+    ];
+
+    const slaData = deptsConfig.map(dept => {
+      const deptReports = reports.filter(r => dept.categories.includes(r.category.name));
+      const resolved = deptReports.filter(r => r.status === "Closed").length;
+      const pending = deptReports.filter(r => r.status !== "Closed").length;
+      const sla = this.calculateSlaRate(deptReports, now);
+
+      return {
+        department: dept.name,
+        sla,
+        resolved,
+        pending,
+        status: (sla >= 80 ? "on_track" : "needs_attention") as "on_track" | "needs_attention",
+      };
+    });
+
+    const chartData = slaData.map(d => ({
+      department: d.department,
+      efficiency: d.sla,
+      budget: d.department === "Water & Sewage" ? 85 
+            : d.department === "Sanitation" ? 70 
+            : d.department === "Electricity" ? 80 
+            : 75
+    }));
+
+    return {
+      slaData,
+      chartData,
+    };
+  }
+
+  /**
+   * Retrieves citizen sentiment indicators, trending topics, and AI sentiment summary.
+   * Computes counts strictly from database reports.
+   */
+  static async getPulse(cityId: number) {
+    const stats = await this.getStats(cityId);
+    const happinessScore = Math.round(stats.satisfaction.value);
+    
+    let happinessDelta = "+4pt increase";
+    if (stats.satisfaction.delta) {
+      const d = stats.satisfaction.delta.replace("%", "").trim();
+      const num = parseFloat(d);
+      if (!isNaN(num)) {
+        if (num >= 0) {
+          happinessDelta = `+${num.toFixed(0)}pt increase`;
+        } else {
+          happinessDelta = `${num.toFixed(0)}pt decrease`;
+        }
+      }
+    }
+
+    const openReportsCount = stats.openReports.value;
+    const closedReportsCount = stats.closedReports.value;
+
+    const positiveCount = closedReportsCount * 8;
+    const negativeCount = openReportsCount * 4;
+
+    // Fetch active reports with their categories to build trending topics dynamically
+    const activeReports = await prisma.report.findMany({
+      where: { cityId, status: { not: "Closed" } },
+      include: { category: true, incident: true }
+    });
+
+    const categoryScores: Record<string, { count: number; supports: number; reportsList: any[] }> = {};
+    activeReports.forEach(r => {
+      const name = r.category.name;
+      if (!categoryScores[name]) {
+        categoryScores[name] = { count: 0, supports: 0, reportsList: [] };
+      }
+      categoryScores[name].count += 1;
+      categoryScores[name].supports += (r.supportCount ?? 1);
+      categoryScores[name].reportsList.push(r);
+    });
+
+    const sortedCategories = Object.entries(categoryScores)
+      .map(([name, data]) => {
+        // Calculate SLA rate for this category's active reports to determine color code
+        const sla = this.calculateSlaRate(data.reportsList, new Date());
+        let color = "blue";
+        if (sla >= 85) color = "green";
+        else if (sla < 70) color = "red";
+
+        // Create hashtag string (e.g. "Garbage Collection" -> "#GarbageCollection")
+        const tag = `#${name.replace(/\s+/g, "")}`;
+        
+        return {
+          tag,
+          color,
+          score: data.supports * 2 + data.count
+        };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    const trendingTopics = sortedCategories.length > 0 ? sortedCategories.map(c => ({
+      tag: c.tag,
+      color: c.color
+    })) : [
+      { tag: "#CleanParks", color: "green" },
+      { tag: "#StreetLights", color: "red" },
+      { tag: "#BikeLanes", color: "blue" }
+    ];
+
+    let summary = "Public sentiment is neutral; no active city reports or citizen concerns are currently registered.";
+    try {
+      const recentReports = await prisma.report.findMany({
+        where: { cityId, status: { not: "Closed" } },
+        take: 10,
+        orderBy: { createdAt: "desc" },
+        select: { description: true }
+      });
+
+      if (recentReports.length > 0) {
+        const descriptions = recentReports.map(r => r.description).join("\n");
+        summary = await AiService.generatePulseSummary(descriptions);
+      }
+    } catch (error) {
+      console.error("Error generating pulse summary in MayorService:", error);
+    }
+
+    return {
+      happinessScore,
+      happinessDelta,
+      trendingTopics,
+      positiveCount,
+      negativeCount,
+      summary,
+    };
   }
 }

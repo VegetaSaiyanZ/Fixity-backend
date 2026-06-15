@@ -7,8 +7,8 @@ import { ListStaffSchema, CreateStaffSchema } from "@/validations/staff.validati
 
 const router = Router();
 
-router.get("/", authenticate(["Official", "Manager"]), validate(ListStaffSchema), asyncHandler(StaffController.listStaff));
-router.post("/", authenticate(["Official", "Manager"]), validate(CreateStaffSchema), asyncHandler(StaffController.createStaff));
-router.delete("/:userId", authenticate(["Official", "Manager"]), asyncHandler(StaffController.deleteStaff));
+router.get("/", authenticate(["Official", "Manager", "HR"]), validate(ListStaffSchema), asyncHandler(StaffController.listStaff));
+router.post("/", authenticate(["HR"]), validate(CreateStaffSchema), asyncHandler(StaffController.createStaff));
+router.delete("/:userId", authenticate(["HR"]), asyncHandler(StaffController.deleteStaff));
 
 export default router;

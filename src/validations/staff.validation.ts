@@ -3,7 +3,7 @@ import { z } from "zod";
 // Validates the query parameter for listing staff — role must be "Manager" or "Worker".
 export const ListStaffSchema = z.object({
   query: z.object({
-    role: z.enum(["Manager", "Worker"]),
+    role: z.enum(["Manager", "Worker", "HR", "Official"]),
   }),
 });
 

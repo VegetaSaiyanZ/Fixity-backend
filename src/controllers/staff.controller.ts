@@ -19,6 +19,7 @@ export class StaffController {
       where: {
         cityId,
         role,
+        deletedAt: null,
       },
       select: {
         userId: true,
@@ -92,5 +93,66 @@ export class StaffController {
       message: "Staff account created successfully",
       user: newStaff,
     });
+  }
+
+  static async deleteStaff(req: AuthRequest, res: Response) {
+    const creatorRole = req.user?.role;
+    const cityId = req.user?.cityId;
+    const callerUserId = req.user?.userId;
+
+    if (!cityId) {
+      throw new CustomError("User does not have an assigned city", 400);
+    }
+
+    const targetId = Number(req.params.userId);
+
+    if (targetId === callerUserId) {
+      throw new CustomError("You cannot delete your own account", 403);
+    }
+
+    // Find the target user
+    const targetUser = await prisma.user.findUnique({
+      where: { userId: targetId },
+    });
+
+    if (!targetUser || targetUser.deletedAt !== null || targetUser.cityId !== cityId) {
+      throw new CustomError("Staff member not found", 404);
+    }
+
+    // Permission checks
+    if (targetUser.role === UserRole.Official) {
+      throw new CustomError("Cannot delete an Official account", 403);
+    }
+    if (
+      creatorRole === UserRole.Manager &&
+      targetUser.role !== UserRole.Worker
+    ) {
+      throw new CustomError("Managers can only delete Worker accounts", 403);
+    }
+
+    // Use a transaction to unassign active tasks and soft delete user
+    await prisma.$transaction(async (tx) => {
+      // Unassign Active Tasks: Find tasks where assignedWorkerId is the target user and status is NOT 'Closed'
+      await tx.task.updateMany({
+        where: {
+          assignedWorkerId: targetId,
+          status: { not: "Closed" },
+        },
+        data: {
+          assignedWorkerId: null,
+          status: "Open"
+        },
+      });
+
+      // Soft Delete User
+      await tx.user.update({
+        where: { userId: targetId },
+        data: {
+          deletedAt: new Date(),
+        },
+      });
+    });
+
+    res.status(200).json({ message: "Staff account deactivated and tasks unassigned." });
   }
 }

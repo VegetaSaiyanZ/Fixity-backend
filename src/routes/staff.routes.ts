@@ -9,5 +9,6 @@ const router = Router();
 
 router.get("/", authenticate(["Official", "Manager"]), validate(ListStaffSchema), asyncHandler(StaffController.listStaff));
 router.post("/", authenticate(["Official", "Manager"]), validate(CreateStaffSchema), asyncHandler(StaffController.createStaff));
+router.delete("/:userId", authenticate(["Official", "Manager"]), asyncHandler(StaffController.deleteStaff));
 
 export default router;

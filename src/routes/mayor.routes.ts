@@ -9,5 +9,7 @@ router.get("/stats", authenticate(["Official"]), asyncHandler(MayorController.ge
 router.get("/ai-insights", authenticate(["Official"]), asyncHandler(MayorController.getAiInsights));
 router.get("/critical-alerts", authenticate(["Official"]), asyncHandler(MayorController.getCriticalAlerts));
 router.get("/map-density", authenticate(["Official"]), asyncHandler(MayorController.getMapDensity));
+router.get("/departments", authenticate(["Official"]), asyncHandler(MayorController.getDepartments));
+router.get("/pulse", authenticate(["Official"]), asyncHandler(MayorController.getPulse));
 
 export default router;

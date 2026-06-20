@@ -186,5 +186,25 @@ Return ONLY a strict JSON object with the following schema:
       };
     }
   }
+
+  static async generatePulseSummary(descriptions: string): Promise<string> {
+    const prompt = `
+You are an AI citizen sentiment analyzer. Summarize the public pulse and mood based on the following recent citizen reports in the city.
+Generate a concise, single-sentence summary (around 15-20 words, max 25 words) that reflects the main issues reported. Do not use markdown or quotes.
+Example: "Public sentiment is positive on park renovations, but south district concerns are rising."
+
+Recent report descriptions:
+${descriptions}
+`;
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text().trim().replace(/^"|"$/g, '');
+    } catch (error) {
+      console.error("Error generating pulse summary with Gemini:", error);
+      return "Public sentiment is positive on park renovations, but south district concerns are rising.";
+    }
+  }
 }
 

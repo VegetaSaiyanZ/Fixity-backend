@@ -4,11 +4,12 @@ import { authenticate } from "@/middleware/auth.middleware";
 import { validate } from "@/middleware/validate.middleware";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { ListStaffSchema, CreateStaffSchema } from "@/validations/staff.validation";
+import { UserRole } from "@prisma/client";
 
 const router = Router();
 
-router.get("/", authenticate(["Official", "Manager", "HR"]), validate(ListStaffSchema), asyncHandler(StaffController.listStaff));
-router.post("/", authenticate(["HR"]), validate(CreateStaffSchema), asyncHandler(StaffController.createStaff));
-router.delete("/:userId", authenticate(["HR"]), asyncHandler(StaffController.deleteStaff));
+router.get("/", authenticate([UserRole.Official, UserRole.Manager, UserRole.HR]), validate(ListStaffSchema), asyncHandler(StaffController.listStaff));
+router.post("/", authenticate([UserRole.HR]), validate(CreateStaffSchema), asyncHandler(StaffController.createStaff));
+router.delete("/:userId", authenticate([UserRole.HR]), asyncHandler(StaffController.deleteStaff));
 
 export default router;

@@ -11,5 +11,6 @@ router.get("/critical-alerts", authenticate(["Official"]), asyncHandler(MayorCon
 router.get("/map-density", authenticate(["Official"]), asyncHandler(MayorController.getMapDensity));
 router.get("/departments", authenticate(["Official"]), asyncHandler(MayorController.getDepartments));
 router.get("/pulse", authenticate(["Official"]), asyncHandler(MayorController.getPulse));
+router.get("/recommendations", authenticate(["Official"]), asyncHandler(MayorController.getRecommendations));
 
 export default router;

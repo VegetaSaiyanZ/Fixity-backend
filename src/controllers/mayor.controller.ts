@@ -58,4 +58,13 @@ export class MayorController {
     const pulse = await MayorService.getPulse(cityId);
     res.status(200).json(pulse);
   }
+
+  static async getRecommendations(req: AuthRequest, res: Response) {
+    const cityId = req.user?.cityId;
+    if (!cityId) {
+      throw new CustomError("User does not have an assigned city", 400);
+    }
+    const recommendations = await MayorService.getRecommendations(cityId);
+    res.status(200).json(recommendations);
+  }
 }

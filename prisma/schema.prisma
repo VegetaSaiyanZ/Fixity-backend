@@ -1,0 +1,167 @@
+// This is your Prisma schema file
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  Citizen
+  Worker
+  Manager
+  HR
+  Official
+}
+
+enum ReportStatus {
+  Open
+  Assigned
+  Closed
+}
+
+enum CategoryType {
+  Report
+  Task
+}
+
+model ReportCategory {
+  reportCategoryId Int    @id @default(autoincrement()) @map("report_category_id")
+  name             String @unique @db.VarChar(100)
+
+  reports Report[]
+
+  @@map("report_categories")
+}
+
+model City {
+  cityId    Int      @id @default(autoincrement()) @map("city_id")
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  users     User[]
+  reports   Report[]
+  incidents Incident[]
+
+  @@map("cities")
+}
+
+model User {
+  userId            Int      @id @default(autoincrement()) @map("user_id")
+  role              UserRole
+  firstName         String   @map("first_name") @db.VarChar(50)
+  lastName          String   @map("last_name") @db.VarChar(50)
+  email             String   @unique @db.VarChar(150)
+  passwordHash      String   @map("password_hash") @db.VarChar(255)
+  cityId            Int      @map("city_id")
+  profilePictureUrl String?  @map("profile_picture_url") @db.VarChar(255)
+  createdAt         DateTime @default(now()) @map("created_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  city          City           @relation(fields: [cityId], references: [cityId])
+  refreshTokens RefreshToken[]
+  reports       Report[]        @relation("ReportRequester")
+  tasks         Task[]          @relation("TaskAssignedWorker")
+  supports      ReportSupport[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  refreshTokenId Int      @id @default(autoincrement()) @map("refresh_token_id")
+  userId         Int      @map("user_id")
+  refreshToken   String   @unique @map("refresh_token") @db.VarChar(255)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [userId])
+
+  @@map("refresh_tokens")
+}
+
+model Category {
+  categoryId  Int           @id @default(autoincrement()) @map("category_id")
+  name        String        @unique @db.VarChar(100)
+  description String?       @db.Text
+  type        CategoryType?
+
+  tasks Task[]
+
+  @@map("categories")
+}
+
+model Incident {
+  incidentId    Int       @id @default(autoincrement()) @map("incident_id")
+  cityId        Int       @map("city_id")
+  description   String?   @db.Text
+  latitude      Decimal   @db.Decimal(10, 8)
+  longitude     Decimal   @db.Decimal(11, 8)
+  priorityScore Decimal?  @default(0.00) @map("priority_score") @db.Decimal(5, 2)
+  status        ReportStatus @default(Open)
+  baseSeverity  Int          @default(1) @map("base_severity")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  resolvedAt    DateTime? @map("resolved_at")
+
+  city    City     @relation(fields: [cityId], references: [cityId])
+  reports Report[]
+  tasks   Task[]
+
+  @@map("incidents")
+}
+
+model Report {
+  reportId       Int          @id @default(autoincrement()) @map("report_id")
+  requesterId    Int          @map("requester_id")
+  categoryId     Int          @map("category_id")
+  cityId         Int          @map("city_id")
+  description    String       @db.Text
+  status         ReportStatus @default(Open)
+  latitude       Decimal      @db.Decimal(10, 8)
+  longitude      Decimal      @db.Decimal(11, 8)
+  beforeImageUrl String?      @map("before_image_url") @db.VarChar(255)
+  supportCount   Int?         @default(1) @map("support_count")
+  incidentId     Int?         @map("incident_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  requester User           @relation("ReportRequester", fields: [requesterId], references: [userId])
+  category  ReportCategory @relation(fields: [categoryId], references: [reportCategoryId])
+  city      City           @relation(fields: [cityId], references: [cityId])
+  incident  Incident?      @relation(fields: [incidentId], references: [incidentId])
+  supports  ReportSupport[]
+
+  @@map("reports")
+}
+
+model Task {
+  taskId           Int          @id @default(autoincrement()) @map("task_id")
+  incidentId       Int          @map("incident_id")
+  categoryId       Int          @map("category_id")
+  assignedWorkerId Int?         @map("assigned_worker_id")
+  status           ReportStatus @default(Open)
+  workerNotes      String?      @map("worker_notes") @db.Text
+  afterImageUrl    String?      @map("after_image_url") @db.VarChar(255)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  resolvedAt       DateTime?    @map("resolved_at")
+
+  incident       Incident @relation(fields: [incidentId], references: [incidentId])
+  category       Category @relation(fields: [categoryId], references: [categoryId])
+  assignedWorker User?    @relation("TaskAssignedWorker", fields: [assignedWorkerId], references: [userId])
+
+  @@map("tasks")
+}
+
+model ReportSupport {
+  supportId Int      @id @default(autoincrement()) @map("support_id")
+  reportId  Int      @map("report_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  report Report @relation(fields: [reportId], references: [reportId])
+  user   User   @relation(fields: [userId], references: [userId])
+
+  @@unique([reportId, userId])
+  @@map("report_supports")
+}

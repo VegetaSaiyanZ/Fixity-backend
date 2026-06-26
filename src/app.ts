@@ -1,0 +1,47 @@
+import express, { Application, Request, Response, NextFunction } from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import path from "path";
+import routes from "@/routes";
+import { errorHandler } from "@/middleware/error.middleware";
+
+const app: Application = express();
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(
+  cors({
+    origin: (origin, callback) => callback(null, true),
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+  }),
+);
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
+app.use(morgan("dev"));
+
+// Static path for uploads
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+// Routes
+app.use("/api", routes);
+
+// Base route
+app.get("/", (req: Request, res: Response) => {
+  res.status(200).json({ message: "Welcome to the Express Backend API!" });
+});
+
+// 404 Handler
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.status(404).json({ error: "Endpoint not found" });
+});
+
+// Global Error Handler
+app.use(errorHandler);
+
+export default app;

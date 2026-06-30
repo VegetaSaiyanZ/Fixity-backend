@@ -7,7 +7,8 @@
     "start": "node dist/server.js",
     "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/server.ts",
     "build": "tsc && tsc-alias",
-    "db:seed": "ts-node prisma/seed.ts"
+    "db:seed": "ts-node prisma/seed.ts",
+    "prod": "cp .env.production .env && npm run build && pm2 restart ecosystem.config.js --env production"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

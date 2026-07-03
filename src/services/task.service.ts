@@ -29,6 +29,11 @@ export class TaskService {
             latitude: true,
             longitude: true,
             createdAt: true,
+            reports: {
+              select: {
+                beforeImageUrl: true,
+              },
+            },
           },
         },
         category: {

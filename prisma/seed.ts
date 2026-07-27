@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, ReportStatus, CategoryType } from "@prisma/client";
+import { PrismaClient, UserRole, ReportStatus, CategoryType, IncidentStatus, TaskStatus } from "@prisma/client";
 import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
@@ -103,6 +103,7 @@ async function main() {
         longitude: 34.7818 + i * 0.005,
         baseSeverity: data.severity,
         priorityScore: initialPriority,
+        status: isAssigned ? IncidentStatus.InProgress : IncidentStatus.Open,
       },
     });
 
@@ -130,7 +131,7 @@ async function main() {
         incidentId: incident.incidentId,
         categoryId: taskCat!.categoryId,
         assignedWorkerId: isAssigned ? worker.userId : null,
-        status: isAssigned ? ReportStatus.Assigned : ReportStatus.Open,
+        status: isAssigned ? TaskStatus.Assigned : TaskStatus.Open,
         workerNotes: isAssigned ? "Priority high, assigned immediately" : null,
       },
     });

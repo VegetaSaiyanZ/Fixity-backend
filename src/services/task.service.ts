@@ -169,10 +169,10 @@ export class TaskService {
       },
     });
 
-    // Also update incident status to Assigned
+    // Also update incident status to InProgress
     await prisma.incident.update({
       where: { incidentId: task.incidentId },
-      data: { status: "Assigned" },
+      data: { status: "InProgress" },
     });
 
     return updatedTask;

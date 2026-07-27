@@ -11,10 +11,42 @@ export interface AnalyzeImageResult {
   description: string;
 }
 
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  delayMs = 40000
+): Promise<T> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: any) {
+      const isRetryable = error?.status === 429 || error?.status === 503;
+      if (isRetryable && attempt < retries - 1) {
+        // Use retryDelay from error if available, otherwise use default
+        const retryDelay = error?.errorDetails?.find((d: any) =>
+          d["@type"]?.includes("RetryInfo")
+        )?.retryDelay;
+        const waitMs = retryDelay
+          ? Math.ceil(parseFloat(retryDelay)) * 1000 + 1000
+          : delayMs;
+        console.warn(
+          `Gemini quota hit, retrying in ${waitMs}ms... (attempt ${
+            attempt + 1
+          }/${retries})`
+        );
+        await new Promise((res) => setTimeout(res, waitMs));
+      } else {
+        throw error;
+      }
+    }
+  }
+  throw new Error("Max retries exceeded");
+}
+
 export class AiService {
   static async analyzeImage(
     buffer: Buffer,
-    mimeType: string,
+    mimeType: string
   ): Promise<AnalyzeImageResult> {
     const base64Data = buffer.toString("base64");
 
@@ -26,7 +58,7 @@ export class AiService {
     } catch (error) {
       console.error(
         "Failed to fetch report categories from DB, falling back to empty list",
-        error,
+        error
       );
     }
 
@@ -73,7 +105,7 @@ Make sure the JSON is valid and "category" is exactly one of the allowed strings
 
       const matched = reportCategories.find(
         (category) =>
-          category.name.toLowerCase() === parsed.category?.toLowerCase(),
+          category.name.toLowerCase() === parsed.category?.toLowerCase()
       );
 
       return {
@@ -141,7 +173,7 @@ ${description}
   }
 
   static async generateMayorInsights(
-    statsText: string,
+    statsText: string
   ): Promise<{ insight: string; action_type: string }> {
     const prompt = `
 You are an expert city planner and data analyst advising the Mayor. Based on the following aggregated statistics of city reports, analyze and detect any critical issues, spikes in specific categories, or geographic clusters.
@@ -169,7 +201,7 @@ Return ONLY a strict JSON object with the following schema:
         generationConfig: { responseMimeType: "application/json" },
       });
 
-      const result = await model.generateContent(prompt);
+      const result = await withRetry(() => model.generateContent(prompt));
       const response = await result.response;
       const text = response.text();
       const parsed = JSON.parse(text);
@@ -181,7 +213,8 @@ Return ONLY a strict JSON object with the following schema:
     } catch (error) {
       console.error("Error generating mayor insights with Gemini:", error);
       return {
-        insight: "Unable to generate insights at this time due to service error.",
+        insight:
+          "Unable to generate insights at this time due to service error.",
         action_type: "MONITOR",
       };
     }
@@ -200,11 +233,113 @@ ${descriptions}
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const result = await model.generateContent(prompt);
       const response = await result.response;
-      return response.text().trim().replace(/^"|"$/g, '');
+      return response.text().trim().replace(/^"|"$/g, "");
     } catch (error) {
       console.error("Error generating pulse summary with Gemini:", error);
       return "Public sentiment is positive on park renovations, but south district concerns are rising.";
     }
   }
-}
 
+  static async generateCityImprovementRecommendations(
+    metricsText: string,
+    slaText: string,
+    sentimentText: string,
+    urgentText: string
+  ): Promise<
+    Array<{
+      title: string;
+      description: string;
+      category: string;
+      impact: string;
+    }>
+  > {
+    const prompt = `
+You are an expert city planner and data analyst advising the Mayor. Based on the following aggregated city metrics, SLA status of various departments, citizen sentiment, and critical/urgent issues, generate a list of 3-4 key actionable recommendations for improving the city.
+Ensure the recommendations are professional, clear, in English, and highly actionable.
+
+City Metrics:
+${metricsText}
+
+Department SLA Status:
+${slaText}
+
+Citizen Sentiment & Pulse:
+${sentimentText}
+
+Critical Alerts & Urgent Issues:
+${urgentText}
+
+Return ONLY a strict JSON array of objects, where each object has the following schema:
+[
+  {
+    "title": "<Concise recommendation title>",
+    "description": "<One concise sentence, max 20 words, actionable and specific>",
+    "category": "<One of: 'Infrastructure', 'Service Delivery', 'Public Safety', 'Citizen Engagement', 'Environment'>",
+    "impact": "<One of: 'High', 'Medium', 'Low'>"
+  }
+]
+`;
+
+    try {
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: { responseMimeType: "application/json" },
+      });
+
+      const result = await withRetry(() => model.generateContent(prompt));
+      const response = await result.response;
+      const text = response.text();
+      const parsed = JSON.parse(text);
+
+      if (Array.isArray(parsed)) {
+        return parsed.map((item: any) => ({
+          title: String(item.title || "Improvement Initiative"),
+          description: String(
+            item.description || "Take proactive action on city reports."
+          ),
+          category: [
+            "Infrastructure",
+            "Service Delivery",
+            "Public Safety",
+            "Citizen Engagement",
+            "Environment",
+          ].includes(item.category)
+            ? item.category
+            : "Service Delivery",
+          impact: ["High", "Medium", "Low"].includes(item.impact)
+            ? item.impact
+            : "Medium",
+        }));
+      }
+      throw new Error("Gemini response is not an array");
+    } catch (error) {
+      console.error(
+        "Error generating city recommendations with Gemini:",
+        error
+      );
+      return [
+        {
+          title: "Prioritize Critical Overdue Reports",
+          description:
+            "Several safety and high-severity issues have exceeded their target SLA. Focus resources on resolving these urgent complaints first.",
+          category: "Public Safety",
+          impact: "High",
+        },
+        {
+          title: "Optimize Department Response Times",
+          description:
+            "Identify and resolve bottlenecks in departments showing lower SLA compliance to improve overall citizen satisfaction.",
+          category: "Service Delivery",
+          impact: "High",
+        },
+        {
+          title: "Proactively Address Active Clusters",
+          description:
+            "Monitor coordinates of frequent reports to deploy preventive maintenance teams and lower recurrence rates.",
+          category: "Infrastructure",
+          impact: "Medium",
+        },
+      ];
+    }
+  }
+}

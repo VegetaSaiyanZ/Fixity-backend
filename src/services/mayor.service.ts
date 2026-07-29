@@ -500,26 +500,18 @@ Previous Reports created (7-14 days ago): ${previousReports.length}
       },
     });
 
-    const deptsConfig = [
-      { name: "Water & Sewage", categories: ["Plumbing"] },
-      {
-        name: "Sanitation",
-        categories: ["Garbage Collection", "Graffiti", "Other"],
-      },
-      { name: "Electricity", categories: ["Electrical", "Streetlight"] },
-      { name: "Roads", categories: ["Pothole", "Safety Hazard"] },
-    ];
+    const dbCategories = await prisma.reportCategory.findMany();
+    // Sort categories alphabetically to ensure consistent display order
+    dbCategories.sort((a, b) => a.name.localeCompare(b.name));
 
-    const slaData = deptsConfig.map((dept) => {
-      const deptReports = reports.filter((r) =>
-        dept.categories.includes(r.category.name)
-      );
+    const slaData = dbCategories.map((cat) => {
+      const deptReports = reports.filter((r) => r.category.name === cat.name);
       const resolved = deptReports.filter((r) => r.status === "Closed").length;
       const pending = deptReports.filter((r) => r.status !== "Closed").length;
       const sla = this.calculateSlaRate(deptReports, now);
 
       return {
-        department: dept.name,
+        department: cat.name,
         sla,
         resolved,
         pending,
@@ -529,18 +521,17 @@ Previous Reports created (7-14 days ago): ${previousReports.length}
       };
     });
 
-    const chartData = slaData.map((d) => ({
-      department: d.department,
-      efficiency: d.sla,
-      budget:
-        d.department === "Water & Sewage"
-          ? 85
-          : d.department === "Sanitation"
-          ? 70
-          : d.department === "Electricity"
-          ? 80
-          : 75,
-    }));
+    const chartData = slaData.map((d) => {
+      // Deterministic hash based on department name to produce a stable, realistic budget target (65% to 90%)
+      const nameHash = d.department.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const budget = 65 + (nameHash % 26);
+
+      return {
+        department: d.department,
+        efficiency: d.sla,
+        budget,
+      };
+    });
 
     return {
       slaData,

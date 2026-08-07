@@ -50,10 +50,12 @@ const initApp = (): Promise<Application> => {
       );
       app.use(express.static(clientPath));
 
+      // API 404 Handler: If an /api/ route doesn't exist, return JSON
       app.all("/api/*", (req: Request, res: Response) => {
         res.status(404).json({ error: "API Endpoint not found" });
       });
 
+      // Send all other requests to your frontend index.html
       app.get("*", (req: Request, res: Response) => {
         res.sendFile(path.join(clientPath, "index.html"));
       });

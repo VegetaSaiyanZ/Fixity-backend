@@ -9,8 +9,8 @@ initApp()
     const PORT = process.env.PORT || 80;
     const NODE_ENV = process.env.NODE_ENV;
 
-    const certPath = path.resolve(__dirname, "../certs/client-cert.pem");
-    const keyPath = path.resolve(__dirname, "../certs/client-key.pem");
+    const certPath = path.resolve(__dirname, "../../client-cert.pem");
+    const keyPath = path.resolve(__dirname, "../../client-key.pem");
 
     const useHttps =
       NODE_ENV === "production" &&

@@ -20,7 +20,7 @@ const initApp = (): Promise<Application> => {
           origin: (origin, callback) => callback(null, true),
           methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
           credentials: true,
-        })
+        }),
       );
       app.use(
         helmet({
@@ -31,7 +31,7 @@ const initApp = (): Promise<Application> => {
               imgSrc: ["'self'", "data:", "https://*.tile.openstreetmap.org"],
             },
           },
-        })
+        }),
       );
       app.use(morgan("dev"));
 
@@ -46,20 +46,16 @@ const initApp = (): Promise<Application> => {
         process.cwd(),
         "..",
         "Fixity-frontend",
-        "dist"
+        "dist",
       );
       app.use(express.static(clientPath));
 
-      // Base route
-      app.get("/", (req: Request, res: Response) => {
-        res
-          .status(200)
-          .json({ message: "Welcome to the Express Backend API!" });
+      app.all("/api/*", (req: Request, res: Response) => {
+        res.status(404).json({ error: "API Endpoint not found" });
       });
 
-      // 404 Handler
-      app.use((req: Request, res: Response, next: NextFunction) => {
-        res.status(404).json({ error: "Endpoint not found" });
+      app.get("*", (req: Request, res: Response) => {
+        res.sendFile(path.join(clientPath, "index.html"));
       });
 
       // Global Error Handler
@@ -73,7 +69,7 @@ const initApp = (): Promise<Application> => {
     } catch (error) {
       console.error(
         "Failed to connect to the database or initialize app:",
-        error
+        error,
       );
       reject(error);
     }

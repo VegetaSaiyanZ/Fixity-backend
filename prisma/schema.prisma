@@ -24,10 +24,23 @@ enum ReportStatus {
   Closed
 }
 
+enum IncidentStatus {
+  Open
+  InProgress
+  Closed
+}
+
+enum TaskStatus {
+  Open
+  Assigned
+  Closed
+}
+
 enum CategoryType {
   Report
   Task
 }
+
 
 model ReportCategory {
   reportCategoryId Int    @id @default(autoincrement()) @map("report_category_id")
@@ -100,7 +113,7 @@ model Incident {
   latitude      Decimal   @db.Decimal(10, 8)
   longitude     Decimal   @db.Decimal(11, 8)
   priorityScore Decimal?  @default(0.00) @map("priority_score") @db.Decimal(5, 2)
-  status        ReportStatus @default(Open)
+  status        IncidentStatus @default(Open)
   baseSeverity  Int          @default(1) @map("base_severity")
   createdAt     DateTime  @default(now()) @map("created_at")
   resolvedAt    DateTime? @map("resolved_at")
@@ -140,7 +153,7 @@ model Task {
   incidentId       Int          @map("incident_id")
   categoryId       Int          @map("category_id")
   assignedWorkerId Int?         @map("assigned_worker_id")
-  status           ReportStatus @default(Open)
+  status           TaskStatus @default(Open)
   workerNotes      String?      @map("worker_notes") @db.Text
   afterImageUrl    String?      @map("after_image_url") @db.VarChar(255)
   createdAt        DateTime     @default(now()) @map("created_at")

@@ -31,7 +31,7 @@ export class EnvHandler implements EnvVars {
 
     console.log(`Loaded environment variables for NODE_ENV=${this.NODE_ENV}`);
 
-    this.PORT = this.asInt("PORT", 3000);
+    this.PORT = this.asInt("PORT", 80);
     this.DATABASE_URL = this.asRequiredString("DATABASE_URL");
     this.JWT_SECRET = this.asRequiredString("JWT_SECRET");
     if (this.JWT_SECRET.length < 32) {
@@ -53,7 +53,7 @@ export class EnvHandler implements EnvVars {
     const value = process.env[name];
     if (!value) {
       throw new Error(
-        `Missing environment variable: ${name} in ${this.NODE_ENV} file`,
+        `Missing environment variable: ${name} in ${this.NODE_ENV} file`
       );
     }
     return value as T;

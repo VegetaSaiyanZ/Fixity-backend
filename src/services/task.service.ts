@@ -5,7 +5,7 @@ import {
   LinkTaskDTO,
 } from "@/validations/task.validation";
 import { CustomError } from "@/middleware/error.middleware";
-import { UserRole } from "@prisma/client";
+import { ReportStatus, UserRole } from "@prisma/client";
 import { PriorityUtils } from "@/utils/priority.util";
 
 export class TaskService {
@@ -178,7 +178,7 @@ export class TaskService {
     // Also update incident status to InProgress
     await prisma.incident.update({
       where: { incidentId: task.incidentId },
-      data: { status: "Open" },
+      data: { status: ReportStatus.Open },
     });
 
     return updatedTask;

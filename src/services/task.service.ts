@@ -5,7 +5,7 @@ import {
   LinkTaskDTO,
 } from "@/validations/task.validation";
 import { CustomError } from "@/middleware/error.middleware";
-import { UserRole } from "@prisma/client";
+import { ReportStatus, UserRole } from "@prisma/client";
 import { PriorityUtils } from "@/utils/priority.util";
 
 export class TaskService {
@@ -50,12 +50,18 @@ export class TaskService {
         incident: {
           ...task.incident,
           priorityScore: PriorityUtils.getDynamicScore(
-            task.incident.priorityScore ? Number(task.incident.priorityScore) : 0,
-            task.incident.createdAt,
+            task.incident.priorityScore
+              ? Number(task.incident.priorityScore)
+              : 0,
+            task.incident.createdAt
           ),
         },
       }))
-      .sort((a, b) => (b.incident.priorityScore as number) - (a.incident.priorityScore as number));
+      .sort(
+        (a, b) =>
+          (b.incident.priorityScore as number) -
+          (a.incident.priorityScore as number)
+      );
   }
 
   static async create(data: CreateTaskDTO, userCityId: number) {
@@ -71,7 +77,7 @@ export class TaskService {
     if (incident.cityId !== userCityId) {
       throw new CustomError(
         "You can only create tasks for incidents in your city",
-        403,
+        403
       );
     }
 
@@ -90,7 +96,7 @@ export class TaskService {
     id: number,
     userId: number,
     userRole: UserRole,
-    data: UpdateTaskStatusDTO,
+    data: UpdateTaskStatusDTO
   ) {
     const task = await prisma.task.findUnique({
       where: { taskId: id },
@@ -172,7 +178,7 @@ export class TaskService {
     // Also update incident status to InProgress
     await prisma.incident.update({
       where: { incidentId: task.incidentId },
-      data: { status: "InProgress" },
+      data: { status: ReportStatus.Open },
     });
 
     return updatedTask;
@@ -208,7 +214,7 @@ export class TaskService {
   static async updateImage(
     id: number,
     userId: number,
-    file: Express.Multer.File,
+    file: Express.Multer.File
   ) {
     const task = await prisma.task.findUnique({
       where: { taskId: id },
@@ -221,7 +227,7 @@ export class TaskService {
     if (task.assignedWorkerId !== userId) {
       throw new CustomError(
         "You can only upload images for tasks assigned to you",
-        403,
+        403
       );
     }
 
@@ -237,7 +243,10 @@ export class TaskService {
     return updatedTask;
   }
 
-  static async update(id: number, data: { workerNotes?: string; categoryId?: number }) {
+  static async update(
+    id: number,
+    data: { workerNotes?: string; categoryId?: number }
+  ) {
     const task = await prisma.task.findUnique({ where: { taskId: id } });
     if (!task) throw new CustomError("Task not found", 404);
     return await prisma.task.update({

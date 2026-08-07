@@ -20,12 +20,18 @@ const initApp = (): Promise<Application> => {
           origin: (origin, callback) => callback(null, true),
           methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
           credentials: true,
-        }),
+        })
       );
       app.use(
         helmet({
           crossOriginResourcePolicy: { policy: "cross-origin" },
-        }),
+          contentSecurityPolicy: {
+            directives: {
+              ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+              imgSrc: ["'self'", "data:", "https://*.tile.openstreetmap.org"],
+            },
+          },
+        })
       );
       app.use(morgan("dev"));
 
@@ -40,7 +46,7 @@ const initApp = (): Promise<Application> => {
         process.cwd(),
         "..",
         "Fixity-frontend",
-        "dist",
+        "dist"
       );
       app.use(express.static(clientPath));
 
@@ -65,7 +71,10 @@ const initApp = (): Promise<Application> => {
 
       resolve(app);
     } catch (error) {
-      console.error("Failed to connect to the database or initialize app:", error);
+      console.error(
+        "Failed to connect to the database or initialize app:",
+        error
+      );
       reject(error);
     }
   });

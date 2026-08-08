@@ -9,10 +9,17 @@ export class ReportController {
       throw new CustomError("No image uploaded", 400);
     }
 
-    const result = await ReportService.uploadAndAnalyze(req.file);
+    const skipAi = req.query.skipAi === 'true' || req.body.skipAi === 'true';
+    const analyzeOnly = req.query.analyzeOnly === 'true' || req.body.analyzeOnly === 'true';
+
+    const result = await ReportService.uploadAndAnalyze(req.file, skipAi, analyzeOnly);
+
+    let message = "Image uploaded and analyzed successfully";
+    if (skipAi) message = "Image uploaded successfully";
+    else if (analyzeOnly) message = "Image analyzed successfully";
 
     res.status(200).json({
-      message: "Image uploaded and analyzed successfully",
+      message,
       ...result,
     });
   }

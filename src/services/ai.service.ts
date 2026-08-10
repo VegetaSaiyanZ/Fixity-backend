@@ -85,7 +85,7 @@ Make sure the JSON is valid and "category" is exactly one of the allowed strings
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash-lite",
         generationConfig: { responseMimeType: "application/json" },
       });
 
@@ -127,7 +127,7 @@ ${statsText}
 `;
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
       const result = await model.generateContent(prompt);
       const response = await result.response;
       return response.text().trim();
@@ -156,7 +156,7 @@ ${description}
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash-lite",
         generationConfig: { responseMimeType: "application/json" },
       });
 
@@ -197,7 +197,7 @@ Return ONLY a strict JSON object with the following schema:
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash-lite",
         generationConfig: { responseMimeType: "application/json" },
       });
 
@@ -282,7 +282,7 @@ Return ONLY a strict JSON array of objects, where each object has the following 
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash-lite",
         generationConfig: { responseMimeType: "application/json" },
       });
 

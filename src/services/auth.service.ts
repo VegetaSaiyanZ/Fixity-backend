@@ -51,7 +51,7 @@ export class AuthService {
       data: { userId: user.userId, refreshToken },
     });
 
-    const { city: userCity, ...userWithoutCity } = user;
+    const { city: userCity, passwordHash, ...userWithoutCity } = user;
     return {
       token,
       refreshToken,
@@ -88,7 +88,7 @@ export class AuthService {
       data: { userId: user.userId, refreshToken },
     });
 
-    const { city, ...userWithoutCity } = user;
+    const { city, passwordHash, ...userWithoutCity } = user;
     return {
       token,
       refreshToken,

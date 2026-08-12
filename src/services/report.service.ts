@@ -9,14 +9,33 @@ import fs from "fs";
 import { UserRole } from "@prisma/client";
 
 export class ReportService {
-  static async uploadAndAnalyze(file: Express.Multer.File) {
+  static async uploadAndAnalyze(file: Express.Multer.File, skipAi: boolean = false, analyzeOnly: boolean = false) {
     const imageUrl = `/uploads/${file.filename}`;
     const filePath = file.path;
+
+    if (skipAi) {
+      return { imageUrl, aiDraft: null };
+    }
 
     const fileBuffer = fs.readFileSync(filePath);
     const mimeType = file.mimetype;
 
-    const aiDraft = await AiService.analyzeImage(fileBuffer, mimeType);
+    let aiDraft = null;
+    try {
+      aiDraft = await AiService.analyzeImage(fileBuffer, mimeType);
+    } finally {
+      if (analyzeOnly) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (error) {
+          console.error("Failed to delete temp file:", error);
+        }
+      }
+    }
+
+    if (analyzeOnly) {
+      return { imageUrl: null, aiDraft };
+    }
 
     return { imageUrl, aiDraft };
   }

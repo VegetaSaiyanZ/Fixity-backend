@@ -522,9 +522,8 @@ Previous Reports created (7-14 days ago): ${previousReports.length}
     });
 
     const chartData = slaData.map((d) => {
-      // Deterministic hash based on department name to produce a stable, realistic budget target (65% to 90%)
-      const nameHash = d.department.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const budget = 65 + (nameHash % 26);
+      const category = dbCategories.find((cat) => cat.name === d.department);
+      const budget = category?.budgetTarget ? Number(category.budgetTarget) : 75;
 
       return {
         department: d.department,
@@ -609,14 +608,14 @@ Previous Reports created (7-14 days ago): ${previousReports.length}
     const trendingTopics =
       sortedCategories.length > 0
         ? sortedCategories.map((c) => ({
-            tag: c.tag,
-            color: c.color,
-          }))
+          tag: c.tag,
+          color: c.color,
+        }))
         : [
-            { tag: "#CleanParks", color: "green" },
-            { tag: "#StreetLights", color: "red" },
-            { tag: "#BikeLanes", color: "blue" },
-          ];
+          { tag: "#CleanParks", color: "green" },
+          { tag: "#StreetLights", color: "red" },
+          { tag: "#BikeLanes", color: "blue" },
+        ];
 
     let summary =
       "Public sentiment is neutral; no active city reports or citizen concerns are currently registered.";

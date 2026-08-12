@@ -28,7 +28,7 @@ const initApp = (): Promise<Application> => {
           contentSecurityPolicy: {
             directives: {
               ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-              "img-src": ["'self'", "data:", "https://*.tile.openstreetmap.org"],
+              imgSrc: ["'self'", "data:", "https://*.tile.openstreetmap.org"],
             },
           },
         }),

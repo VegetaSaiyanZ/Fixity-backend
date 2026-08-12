@@ -30,8 +30,7 @@ async function withRetry<T>(
           ? Math.ceil(parseFloat(retryDelay)) * 1000 + 1000
           : delayMs;
         console.warn(
-          `Gemini quota hit, retrying in ${waitMs}ms... (attempt ${
-            attempt + 1
+          `Gemini quota hit, retrying in ${waitMs}ms... (attempt ${attempt + 1
           }/${retries})`
         );
         await new Promise((res) => setTimeout(res, waitMs));
@@ -85,7 +84,7 @@ Make sure the JSON is valid and "category" is exactly one of the allowed strings
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-3.5-flash-lite",
+        model: "gemini-2.5-flash",
         generationConfig: { responseMimeType: "application/json" },
       });
 
@@ -127,7 +126,7 @@ ${statsText}
 `;
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-3.5-flash-lite" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       const result = await model.generateContent(prompt);
       const response = await result.response;
       return response.text().trim();
@@ -156,7 +155,7 @@ ${description}
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-3.5-flash-lite",
+        model: "gemini-2.5-flash",
         generationConfig: { responseMimeType: "application/json" },
       });
 
@@ -197,7 +196,7 @@ Return ONLY a strict JSON object with the following schema:
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-3.5-flash-lite",
+        model: "gemini-2.5-flash",
         generationConfig: { responseMimeType: "application/json" },
       });
 
@@ -282,7 +281,7 @@ Return ONLY a strict JSON array of objects, where each object has the following 
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-3.5-flash-lite",
+        model: "gemini-2.5-flash",
         generationConfig: { responseMimeType: "application/json" },
       });
 

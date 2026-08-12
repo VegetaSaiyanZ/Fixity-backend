@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import prisma from "@/prisma/client";
 
 const genAI = new GoogleGenerativeAI(EnvHandler.instance.GEMINI_API_KEY);
-const GEMINI_MODEL = "gemini-3.5-flash";
+const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 export interface AnalyzeImageResult {
   category: string;

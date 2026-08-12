@@ -75,6 +75,10 @@ export class TaskService {
       );
     }
 
+    if (incident.status === "Closed") {
+      throw new CustomError("Cannot create tasks for a closed incident", 400);
+    }
+
     const newTask = await prisma.task.create({
       data: {
         incidentId: data.incidentId,

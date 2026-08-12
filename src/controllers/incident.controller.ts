@@ -51,4 +51,11 @@ export class IncidentController {
     const result = await IncidentService.removeReport(id, reportId, userCityId);
     res.status(200).json(result);
   }
+
+  static async close(req: AuthRequest, res: Response) {
+    const id = Number(req.params.id);
+    const userCityId = req.user!.cityId;
+    const result = await IncidentService.close(id, userCityId);
+    res.status(200).json({ message: "Incident closed successfully", incident: result });
+  }
 }

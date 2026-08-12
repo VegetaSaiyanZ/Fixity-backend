@@ -15,5 +15,6 @@ router.delete("/:id", authenticate(["Manager", "Official"]), asyncHandler(Incide
 
 router.post("/:id/reports", authenticate(["Manager", "Official"]), asyncHandler(IncidentController.addReports));
 router.delete("/:id/reports/:reportId", authenticate(["Manager", "Official"]), asyncHandler(IncidentController.removeReport));
+router.post("/:id/close", authenticate(["Manager", "Official"]), asyncHandler(IncidentController.close));
 
 export default router;

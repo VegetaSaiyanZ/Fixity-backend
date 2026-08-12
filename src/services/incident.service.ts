@@ -2,7 +2,7 @@ import prisma from "@/prisma/client";
 import { CreateIncidentDTO } from "@/validations/incident.validation";
 import { CustomError } from "@/middleware/error.middleware";
 import { AiService } from "@/services/ai.service";
-import { ReportStatus } from "@prisma/client";
+import { IncidentStatus, ReportStatus, TaskStatus } from "@prisma/client";
 import { PriorityUtils } from "@/utils/priority.util";
 
 export class IncidentService {
@@ -118,9 +118,47 @@ export class IncidentService {
     if (incident.cityId !== userCityId) {
       throw new CustomError("You can only edit incidents in your city", 403);
     }
+    if (incident.status === IncidentStatus.Closed) {
+      throw new CustomError("Cannot edit a closed incident", 400);
+    }
     return await prisma.incident.update({
       where: { incidentId: id },
       data: { description: data.description },
+    });
+  }
+
+  static async close(id: number, userCityId: number) {
+    const incident = await prisma.incident.findUnique({
+      where: { incidentId: id },
+    });
+    if (!incident) throw new CustomError("Incident not found", 404);
+    if (userCityId && incident.cityId !== userCityId) {
+      throw new CustomError("You can only modify incidents in your city", 403);
+    }
+    if (incident.status === IncidentStatus.Closed) {
+      throw new CustomError("Incident is already closed", 400);
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      const updatedIncident = await tx.incident.update({
+        where: { incidentId: id },
+        data: {
+          status: IncidentStatus.Closed,
+          resolvedAt: new Date(),
+        },
+      });
+
+      await tx.report.updateMany({
+        where: { incidentId: id },
+        data: { status: ReportStatus.Closed },
+      });
+
+      await tx.task.updateMany({
+        where: { incidentId: id },
+        data: { status: TaskStatus.Closed, resolvedAt: new Date() },
+      });
+
+      return updatedIncident;
     });
   }
 
@@ -147,6 +185,9 @@ export class IncidentService {
     if (!incident) throw new CustomError("Incident not found", 404);
     if (userCityId && incident.cityId !== userCityId) {
       throw new CustomError("You can only modify incidents in your city", 403);
+    }
+    if (incident.status === IncidentStatus.Closed) {
+      throw new CustomError("Cannot add reports to a closed incident", 400);
     }
 
     const reports = await prisma.report.findMany({
@@ -182,6 +223,9 @@ export class IncidentService {
     if (!incident) throw new CustomError("Incident not found", 404);
     if (userCityId && incident.cityId !== userCityId) {
       throw new CustomError("You can only modify incidents in your city", 403);
+    }
+    if (incident.status === IncidentStatus.Closed) {
+      throw new CustomError("Cannot remove reports from a closed incident", 400);
     }
 
     const report = await prisma.report.findFirst({

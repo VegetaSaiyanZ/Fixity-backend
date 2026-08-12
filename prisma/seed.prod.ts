@@ -16,26 +16,26 @@ async function main() {
   await prisma.reportCategory.deleteMany();
 
   console.log("Seeding report categories...");
-  const reportCategoryNames = [
-    "Electrical",
-    "Plumbing",
-    "Safety Hazard",
-    "Garbage Collection",
-    "Graffiti",
-    "Pothole",
-    "Streetlight",
-    "Other",
-    "Traffic Signals",
-    "Park Maintenance",
-    "Water Leakage",
-    "Noise Complaint",
-    "Abandoned Vehicle",
-    "Animal Control",
-    "Vandalism",
-    "Tree Trimming"
+  const reportCategories = [
+    { name: "Electrical", budgetTarget: 85.0 },
+    { name: "Plumbing", budgetTarget: 80.0 },
+    { name: "Safety Hazard", budgetTarget: 90.0 },
+    { name: "Garbage Collection", budgetTarget: 75.0 },
+    { name: "Graffiti", budgetTarget: 70.0 },
+    { name: "Pothole", budgetTarget: 65.0 },
+    { name: "Streetlight", budgetTarget: 82.0 },
+    { name: "Other", budgetTarget: 75.0 },
+    { name: "Traffic Signals", budgetTarget: 88.0 },
+    { name: "Park Maintenance", budgetTarget: 72.0 },
+    { name: "Water Leakage", budgetTarget: 85.0 },
+    { name: "Noise Complaint", budgetTarget: 68.0 },
+    { name: "Abandoned Vehicle", budgetTarget: 70.0 },
+    { name: "Animal Control", budgetTarget: 75.0 },
+    { name: "Vandalism", budgetTarget: 73.0 },
+    { name: "Tree Trimming", budgetTarget: 78.0 }
   ];
-  for (const name of reportCategoryNames) {
-    await prisma.reportCategory.create({ data: { name } });
+  for (const cat of reportCategories) {
+    await prisma.reportCategory.create({ data: cat });
   }
 
   console.log("Seeding cities...");

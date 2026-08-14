@@ -43,8 +43,9 @@ enum CategoryType {
 
 
 model ReportCategory {
-  reportCategoryId Int    @id @default(autoincrement()) @map("report_category_id")
-  name             String @unique @db.VarChar(100)
+  reportCategoryId Int     @id @default(autoincrement()) @map("report_category_id")
+  name             String  @unique @db.VarChar(100)
+  budgetTarget     Decimal @default(75.00) @map("budget_target") @db.Decimal(5, 2)
 
   reports Report[]
 

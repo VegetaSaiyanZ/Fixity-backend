@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import prisma from "@/prisma/client";
 
 const genAI = new GoogleGenerativeAI(EnvHandler.instance.GEMINI_API_KEY);
+const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 export interface AnalyzeImageResult {
   category: string;
@@ -85,7 +86,7 @@ Make sure the JSON is valid and "category" is exactly one of the allowed strings
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: GEMINI_MODEL,
         generationConfig: { responseMimeType: "application/json" },
       });
 
@@ -127,7 +128,7 @@ ${statsText}
 `;
 
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
       const result = await model.generateContent(prompt);
       const response = await result.response;
       return response.text().trim();
@@ -156,7 +157,7 @@ ${description}
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: GEMINI_MODEL,
         generationConfig: { responseMimeType: "application/json" },
       });
 
@@ -197,7 +198,7 @@ Return ONLY a strict JSON object with the following schema:
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: GEMINI_MODEL,
         generationConfig: { responseMimeType: "application/json" },
       });
 
@@ -230,7 +231,7 @@ Recent report descriptions:
 ${descriptions}
 `;
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
       const result = await model.generateContent(prompt);
       const response = await result.response;
       return response.text().trim().replace(/^"|"$/g, "");
@@ -282,7 +283,7 @@ Return ONLY a strict JSON array of objects, where each object has the following 
 
     try {
       const model = genAI.getGenerativeModel({
-        model: "gemini-2.5-flash",
+        model: GEMINI_MODEL,
         generationConfig: { responseMimeType: "application/json" },
       });
 

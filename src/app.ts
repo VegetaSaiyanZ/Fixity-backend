@@ -20,7 +20,7 @@ const initApp = (): Promise<Application> => {
           origin: (origin, callback) => callback(null, true),
           methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
           credentials: true,
-        }),
+        })
       );
       app.use(
         helmet({
@@ -28,10 +28,17 @@ const initApp = (): Promise<Application> => {
           contentSecurityPolicy: {
             directives: {
               ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-              "img-src": ["'self'", "data:", "https://*.tile.openstreetmap.org"],
+              "img-src": [
+                "'self'",
+                "data:",
+                "https://*.tile.openstreetmap.org",
+                "https://placehold.co",
+              ],
+
+              "connect-src": ["'self'", "https://nominatim.openstreetmap.org"],
             },
           },
-        }),
+        })
       );
       app.use(morgan("dev"));
 
@@ -46,7 +53,7 @@ const initApp = (): Promise<Application> => {
         process.cwd(),
         "..",
         "Fixity-frontend",
-        "dist",
+        "dist"
       );
       app.use(express.static(clientPath));
 
@@ -71,7 +78,7 @@ const initApp = (): Promise<Application> => {
     } catch (error) {
       console.error(
         "Failed to connect to the database or initialize app:",
-        error,
+        error
       );
       reject(error);
     }

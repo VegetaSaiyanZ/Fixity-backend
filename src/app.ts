@@ -57,14 +57,16 @@ const initApp = (): Promise<Application> => {
       );
       app.use(express.static(clientPath));
 
-      // API 404 Handler: If an /api/ route doesn't exist, return JSON
-      app.all("/api/*", (req: Request, res: Response) => {
-        res.status(404).json({ error: "API Endpoint not found" });
+      // Base route
+      app.get("/", (req: Request, res: Response) => {
+        res
+          .status(200)
+          .json({ message: "Welcome to the Express Backend API!" });
       });
 
-      // Send all other requests to your frontend index.html
-      app.get("*", (req: Request, res: Response) => {
-        res.sendFile(path.join(clientPath, "index.html"));
+      // 404 Handler
+      app.use((req: Request, res: Response, next: NextFunction) => {
+        res.status(404).json({ error: "Endpoint not found" });
       });
 
       // Global Error Handler

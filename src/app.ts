@@ -31,11 +31,18 @@ const initApp = (): Promise<Application> => {
               "img-src": [
                 "'self'",
                 "data:",
+                "blob:",
+                "http:",
+                "https:",
                 "https://*.tile.openstreetmap.org",
                 "https://placehold.co",
               ],
-
-              "connect-src": ["'self'", "https://nominatim.openstreetmap.org"],
+              "connect-src": [
+                "'self'",
+                "http:",
+                "https:",
+                "https://nominatim.openstreetmap.org",
+              ],
             },
           },
         })

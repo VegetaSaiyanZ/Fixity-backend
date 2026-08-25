@@ -24,11 +24,11 @@ export class ReportController {
     });
   }
 
-  static async getAllOfUserCity(req: AuthRequest, res: Response) {
+  static async getActiveOfUserCity(req: AuthRequest, res: Response) {
     const userId = req.user!.userId;
     const userCityId = req.user!.cityId;
     if (!userCityId) throw new CustomError("Pick a city", 400);
-    const reports = await ReportService.getAllOfUserCity(userId, userCityId);
+    const reports = await ReportService.getActiveOfUserCity(userId, userCityId);
     res.status(200).json(reports);
   }
 

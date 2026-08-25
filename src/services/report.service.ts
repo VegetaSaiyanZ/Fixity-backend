@@ -44,10 +44,13 @@ export class ReportService {
     return { imageUrl, aiDraft };
   }
 
-  static async getAllOfUserCity(userId: number, userCityId: number) {
+  static async getActiveOfUserCity(userId: number, userCityId: number) {
     return await prisma.report.findMany({
       where: {
         cityId: userCityId,
+        status: {
+          not: ReportStatus.Closed,
+        },
       },
       include: {
         category: true,

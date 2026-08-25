@@ -15,7 +15,7 @@ const router = Router();
 router.get(
   "/",
   authenticate(),
-  asyncHandler(ReportController.getAllOfUserCity),
+  asyncHandler(ReportController.getActiveOfUserCity),
 );
 router.get("/me", authenticate(), asyncHandler(ReportController.getMyReports));
 router.get("/:id", authenticate(), asyncHandler(ReportController.getById));

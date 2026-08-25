@@ -135,8 +135,21 @@ export class IncidentService {
     if (userCityId && incident.cityId !== userCityId) {
       throw new CustomError("You can only modify incidents in your city", 403);
     }
+    
     if (incident.status === IncidentStatus.Closed) {
       throw new CustomError("Incident is already closed", 400);
+    }
+    
+    const tasks = await prisma.task.findMany({
+      where: { incidentId: id },
+    });
+
+    if (tasks.length === 0) {
+      throw new CustomError("Cannot close incident with no tasks", 400);
+    }
+    
+    if (tasks.some((task) => task.status === TaskStatus.Open)) {
+      throw new CustomError("Cannot close incident with open tasks", 400);
     }
 
     return await prisma.$transaction(async (tx) => {
@@ -151,11 +164,6 @@ export class IncidentService {
       await tx.report.updateMany({
         where: { incidentId: id },
         data: { status: ReportStatus.Closed },
-      });
-
-      await tx.task.updateMany({
-        where: { incidentId: id },
-        data: { status: TaskStatus.Closed, resolvedAt: new Date() },
       });
 
       return updatedIncident;

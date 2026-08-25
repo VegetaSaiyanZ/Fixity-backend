@@ -6,10 +6,14 @@ import {
 import { CustomError } from "@/middleware/error.middleware";
 import { AiService } from "@/services/ai.service";
 import fs from "fs";
-import { UserRole } from "@prisma/client";
+import { ReportStatus, UserRole } from "@prisma/client";
 
 export class ReportService {
-  static async uploadAndAnalyze(file: Express.Multer.File, skipAi: boolean = false, analyzeOnly: boolean = false) {
+  static async uploadAndAnalyze(
+    file: Express.Multer.File,
+    skipAi: boolean = false,
+    analyzeOnly: boolean = false,
+  ) {
     const imageUrl = `/uploads/${file.filename}`;
     const filePath = file.path;
 
@@ -146,11 +150,13 @@ export class ReportService {
       throw new CustomError("Report not found", 404);
     }
 
+    if (report.status !== ReportStatus.Open) {
+      throw new CustomError("You can only delete open reports", 403);
+    }
+
     if (userRole !== UserRole.Manager) {
       if (report.requesterId !== userId) {
         throw new CustomError("You can only delete your own reports", 403);
-      } else if (report.status !== "Open") {
-        throw new CustomError("You can only delete open reports", 403);
       }
     }
 
@@ -158,8 +164,16 @@ export class ReportService {
       throw new CustomError("You can only delete reports from your city", 403);
     }
 
-    await prisma.report.delete({
-      where: { reportId: id },
+    await prisma.$transaction(async (tx) => {
+      // Delete associated supports first to prevent foreign key constraint violation
+      await tx.reportSupport.deleteMany({
+        where: { reportId: id },
+      });
+
+      // Now delete the report
+      await tx.report.delete({
+        where: { reportId: id },
+      });
     });
 
     return { message: "Report deleted successfully" };
@@ -203,7 +217,11 @@ export class ReportService {
           });
         }
 
-        return { message: "Support removed", supported: false, supportCount: updatedReport.supportCount };
+        return {
+          message: "Support removed",
+          supported: false,
+          supportCount: updatedReport.supportCount,
+        };
       } else {
         // SUPPORT
         await tx.reportSupport.create({
@@ -222,7 +240,11 @@ export class ReportService {
           });
         }
 
-        return { message: "Support added", supported: true, supportCount: updatedReport.supportCount };
+        return {
+          message: "Support added",
+          supported: true,
+          supportCount: updatedReport.supportCount,
+        };
       }
     });
   }

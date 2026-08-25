@@ -132,29 +132,6 @@ export class TaskService {
       },
     });
 
-    // If task is closed, check if incident should also be closed
-    if (data.status === "Closed") {
-      const remainingTasks = await prisma.task.findMany({
-        where: {
-          incidentId: task.incidentId,
-          status: { not: "Closed" },
-        },
-      });
-
-      if (remainingTasks.length === 0) {
-        // All tasks closed -> close incident and reports
-        await prisma.incident.update({
-          where: { incidentId: task.incidentId },
-          data: { status: "Closed", resolvedAt: new Date() },
-        });
-
-        await prisma.report.updateMany({
-          where: { incidentId: task.incidentId },
-          data: { status: "Closed" },
-        });
-      }
-    }
-
     return updatedTask;
   }
 
